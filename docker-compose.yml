@@ -1,0 +1,34 @@
+version: '3.9'
+name: tmdad
+services:
+  db:
+    image: postgres
+    restart: always
+    environment:
+      POSTGRES_USER: tmdad
+      POSTGRES_PASSWORD: tmdad
+      DATABASE_NAME: tmdad_db
+    ports:
+      - 5432:5432
+    volumes:
+      - ./database/init-user-db.sh:/docker-entrypoint-initdb.d/init-user-db.sh
+      - ./database/data:/var/lib/postgresql/data
+
+  adminer:
+    image: adminer
+    restart: always
+    ports:
+      - 8085:8080
+  
+  frontend:
+    image: nginx
+    ports:
+      - 8080:80
+    volumes:
+      - ./frontend:/usr/share/nginx/html
+
+  backend:
+    build: ./websockets/
+    image: tmdad_spring
+    ports: 
+      - 9090:8080
