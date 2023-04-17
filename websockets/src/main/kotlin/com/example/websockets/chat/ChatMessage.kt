@@ -1,8 +1,9 @@
-package com.example.websockets
+package com.example.websockets.chat
 
 data class ChatMessage(
     var content: String? = null,
     var sender: String,
+    var group: String,
     var type: MessageType
 )
 

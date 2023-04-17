@@ -1,34 +1,73 @@
 'use strict';
 
+const backend_url = 'http://localhost:9090';
+const wsEnpoint = '/websocket';
+const loginEndpoint = '/users/login';
+
 const usernamePage = document.querySelector('#username-page');
 const chatPage = document.querySelector('#chat-page');
 const usernameForm = document.querySelector('#usernameForm');
 const messageForm = document.querySelector('#messageForm');
 const messageInput = document.querySelector('#message');
 const messageArea = document.querySelector('#messageArea');
-const connectingElement = document.querySelector('.connecting');
+const connectingElement = document.querySelector('#connecting');
+const loginInfoElement = document.querySelector('#logininfo');
 
 let stompClient = null;
 let username = null;
+let jwtToken = null;
 
 const colors = [
     '#2196F3', '#32c787', '#00BCD4', '#ff5652',
     '#ffc107', '#ff85af', '#FF9800', '#39bbb0'
 ];
 
-function connect(event) {
+function loginError(e, info = "Login error") {
+    if(e) console.log(e);
+    loginInfoElement.textContent = info
+    loginInfoElement.style.color = 'red';
+    loginInfoElement.style.backgroundColor = '#FFCCCB'
+    loginInfoElement.classList.remove('hidden');
+}
+
+function login(event) {
     username = document.querySelector('#name').value.trim();
-
-    if(username) {
-        usernamePage.classList.add('hidden');
-        chatPage.classList.remove('hidden');
-
-        const socket = new SockJS('/websocket');
-        stompClient = Stomp.over(socket);
-
-        stompClient.connect({}, onConnected, onError);
-    }
+    let password = document.querySelector('#password').value.trim();
     event.preventDefault();
+
+    if(username && password) {
+        let jsonRequestBody = JSON.stringify({
+            username: username,
+            password: password,
+        });
+        
+        fetch(backend_url + loginEndpoint, {
+            method: 'POST',
+            mode: 'cors',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+            },
+            body: jsonRequestBody
+        })
+        .then(x => x.json())
+        .then(data => {
+            jwtToken = data.token;
+            usernamePage.classList.add('hidden');
+            chatPage.classList.remove('hidden');
+            const socket = new SockJS(backend_url + wsEnpoint);
+            stompClient = Stomp.over(socket);
+            var stompHeaders = {};
+            stompHeaders["token"] = jwtToken;
+            stompClient.connect(stompHeaders, onConnected, onError);
+        }).catch (e => {
+            loginError(e);
+        });
+    } else {
+        loginError(null, "Missing Fields");
+    }
+
+    usernameForm.reset();
 }
 
 async function onConnected() {
@@ -38,14 +77,14 @@ async function onConnected() {
     // Tell your username to the server
     stompClient.send("/app/chat.register",
         {},
-        JSON.stringify({sender: username, type: 'JOIN'})
+        JSON.stringify({sender: username, group: 'public', type: 'JOIN'})
     )
 
     connectingElement.classList.add('hidden');
 }
 
 function onError(error) {
-    console.log(error)
+    console.log('Error:', error.headers.message)
     connectingElement.textContent = 'No fue posible conectar con WebSocket';
     connectingElement.style.color = 'red';
 }
@@ -57,6 +96,7 @@ function send(event) {
         const chatMessage = {
             sender: username,
             content: messageInput.value,
+            group: 'public',
             type: 'CHAT'
         };
 
@@ -113,5 +153,7 @@ function getAvatarColor(messageSender) {
     return colors[index];
 }
 
-usernameForm.addEventListener('submit', connect, true)
+usernameForm.addEventListener('submit', login, true)
 messageForm.addEventListener('submit', send, true)
+
+
