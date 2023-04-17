@@ -6,6 +6,8 @@ import org.springframework.http.HttpMethod
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
 import org.springframework.security.config.annotation.web.builders.HttpSecurity
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity
+import org.springframework.security.config.annotation.web.messaging.MessageSecurityMetadataSourceRegistry
+import org.springframework.security.config.annotation.web.socket.AbstractSecurityWebSocketMessageBrokerConfigurer
 import org.springframework.security.config.http.SessionCreationPolicy
 import org.springframework.security.core.authority.SimpleGrantedAuthority
 import org.springframework.security.oauth2.server.resource.InvalidBearerTokenException
@@ -14,7 +16,7 @@ import org.springframework.security.web.SecurityFilterChain
 
 @Configuration
 @EnableWebSecurity
-class SecurityConfig (
+class WebSecurityConfig (
     val tokenService: TokenService
 ) {
     @Bean
@@ -23,6 +25,7 @@ class SecurityConfig (
         http.authorizeHttpRequests()
             .requestMatchers(HttpMethod.POST, "/users/login").permitAll()
             .requestMatchers(HttpMethod.POST, "/users/register").permitAll()
+            .requestMatchers(HttpMethod.GET, "/csrf").permitAll()
             .requestMatchers("/websocket/**").permitAll()
             .anyRequest().authenticated()
 

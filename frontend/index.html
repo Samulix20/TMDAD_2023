@@ -25,7 +25,10 @@
                        placeholder="Password" type="password"/>
             </div>
             <div class="form-group">
-                <button class="accent username-submit" type="submit">Login</button>
+                <div class="input-group clearfix">
+                    <button class="accent username-submit" type="submit" id="login">Login</button>
+                    <button class="accent username-submit" type="submit" id="register" style="background-color: #25be38;">Register</button>
+                </div>
             </div>
         </form>
     </div>
@@ -40,10 +43,28 @@
         <ul id="messageArea">
 
         </ul>
-        <form id="messageForm" name="messageForm" nameForm="messageForm">
+        <form class="messageForm" id="messageForm" name="messageForm" nameForm="messageForm">
             <div class="form-group">
                 <div class="input-group clearfix">
                     <input autocomplete="off" class="form-control" id="message" placeholder="Escribe un mensaje..."
+                           type="text"/>
+                    <button class="primary" type="submit">Enviar</button>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <div class="chat-container">
+        <div class="chat-header">
+            <h2>Chat 2</h2>
+        </div>
+        <ul id="messageArea2">
+
+        </ul>
+        <form class="messageForm" id="messageForm2" name="messageForm" nameForm="messageForm">
+            <div class="form-group">
+                <div class="input-group clearfix">
+                    <input autocomplete="off" class="form-control" id="message2" placeholder="Escribe un mensaje..."
                            type="text"/>
                     <button class="primary" type="submit">Enviar</button>
                 </div>

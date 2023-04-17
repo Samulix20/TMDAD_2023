@@ -1,4 +1,4 @@
-package com.example.websockets.users
+package com.example.websockets.entities
 
 import jakarta.persistence.*
 import org.springframework.data.repository.CrudRepository

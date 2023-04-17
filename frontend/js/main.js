@@ -2,7 +2,6 @@
 
 const backend_url = 'http://localhost:9090';
 const wsEnpoint = '/websocket';
-const loginEndpoint = '/users/login';
 
 const usernamePage = document.querySelector('#username-page');
 const chatPage = document.querySelector('#chat-page');
@@ -22,7 +21,7 @@ const colors = [
     '#ffc107', '#ff85af', '#FF9800', '#39bbb0'
 ];
 
-function loginError(e, info = "Login error") {
+function loginError(e, info) {
     if(e) console.log(e);
     loginInfoElement.textContent = info
     loginInfoElement.style.color = 'red';
@@ -30,18 +29,35 @@ function loginError(e, info = "Login error") {
     loginInfoElement.classList.remove('hidden');
 }
 
+function register(event) {
+    console.log('Reg');
+}
+
 function login(event) {
+
     username = document.querySelector('#name').value.trim();
     let password = document.querySelector('#password').value.trim();
     event.preventDefault();
 
     if(username && password) {
+
         let jsonRequestBody = JSON.stringify({
             username: username,
             password: password,
         });
+
+        let endpoint = null
+        let errStr = null
+
+        if (event.submitter.id == 'register') {
+            endpoint = '/users/register'
+            errStr = 'Register'
+        } else {
+            endpoint = '/users/login'
+            errStr = 'Login'
+        }
         
-        fetch(backend_url + loginEndpoint, {
+        fetch(backend_url + endpoint, {
             method: 'POST',
             mode: 'cors',
             headers: {
@@ -58,10 +74,10 @@ function login(event) {
             const socket = new SockJS(backend_url + wsEnpoint);
             stompClient = Stomp.over(socket);
             var stompHeaders = {};
-            stompHeaders["token"] = jwtToken;
+            stompHeaders['token'] = jwtToken;
             stompClient.connect(stompHeaders, onConnected, onError);
         }).catch (e => {
-            loginError(e);
+            loginError(e, errStr + " error");
         });
     } else {
         loginError(null, "Missing Fields");
@@ -153,7 +169,7 @@ function getAvatarColor(messageSender) {
     return colors[index];
 }
 
-usernameForm.addEventListener('submit', login, true)
-messageForm.addEventListener('submit', send, true)
+usernameForm.addEventListener('submit', login, true);
+messageForm.addEventListener('submit', send, true);
 
 

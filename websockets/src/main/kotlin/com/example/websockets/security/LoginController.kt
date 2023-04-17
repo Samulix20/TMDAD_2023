@@ -1,7 +1,9 @@
 package com.example.websockets.security
 
-import com.example.websockets.users.ChatUser
-import com.example.websockets.users.ChatUserRepository
+import com.example.websockets.dto.TokenResponse
+import com.example.websockets.dto.UserLoginInfo
+import com.example.websockets.entities.ChatUser
+import com.example.websockets.entities.ChatUserRepository
 import org.springframework.web.bind.annotation.*
 import org.springframework.web.server.ResponseStatusException
 
@@ -13,7 +15,6 @@ class LoginController (
     val tokenService: TokenService,
     val hashService: HashService
 ) {
-
     @PostMapping("/register")
     fun register(@RequestBody payload: UserLoginInfo): TokenResponse {
         try {
@@ -33,12 +34,3 @@ class LoginController (
         return TokenResponse(tokenService.createToken(user))
     }
 }
-
-data class UserLoginInfo (
-    val username: String,
-    val password: String
-)
-
-data class TokenResponse (
-    val token : String
-)

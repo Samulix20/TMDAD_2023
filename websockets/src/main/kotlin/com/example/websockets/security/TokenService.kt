@@ -1,7 +1,7 @@
 package com.example.websockets.security;
 
-import com.example.websockets.users.ChatUser
-import com.example.websockets.users.ChatUserRepository
+import com.example.websockets.entities.ChatUser
+import com.example.websockets.entities.ChatUserRepository
 import org.springframework.data.repository.findByIdOrNull
 import org.springframework.security.oauth2.jwt.JwsHeader
 import org.springframework.security.oauth2.jwt.Jwt
