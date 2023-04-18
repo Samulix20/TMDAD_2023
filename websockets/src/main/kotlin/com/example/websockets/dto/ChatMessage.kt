@@ -1,4 +1,4 @@
-package com.example.websockets.chat
+package com.example.websockets.dto
 
 data class ChatMessage(
     var content: String? = null,

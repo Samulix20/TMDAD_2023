@@ -1,4 +1,4 @@
-package com.example.websockets.security;
+package com.example.websockets.services;
 
 import com.example.websockets.entities.ChatUser
 import com.example.websockets.entities.ChatUserRepository

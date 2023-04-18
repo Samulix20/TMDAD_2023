@@ -1,4 +1,4 @@
-package com.example.websockets.security
+package com.example.websockets.config
 
 import com.nimbusds.jose.jwk.source.ImmutableSecret
 import com.nimbusds.jose.proc.SecurityContext

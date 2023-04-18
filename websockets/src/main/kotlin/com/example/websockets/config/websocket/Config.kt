@@ -1,6 +1,5 @@
-package com.example.websockets.config
+package com.example.websockets.config.websocket
 
-import com.example.websockets.security.WebsocketsAuthorizationInterceptor
 import org.springframework.context.annotation.Configuration
 import org.springframework.messaging.simp.config.ChannelRegistration
 import org.springframework.messaging.simp.config.MessageBrokerRegistry
@@ -10,11 +9,12 @@ import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerCo
 
 @Configuration
 @EnableWebSocketMessageBroker
-class WebsocketConfig (
-    val interceptor: WebsocketsAuthorizationInterceptor
+class Config (
+    val interceptor: AuthorizationInterceptor
 ) : WebSocketMessageBrokerConfigurer {
     override fun registerStompEndpoints(registry: StompEndpointRegistry) {
         registry.addEndpoint("/websocket").setAllowedOriginPatterns("*").withSockJS()
+        registry.setErrorHandler(ErrorHandler())
     }
 
     override fun configureMessageBroker(registry: MessageBrokerRegistry) {

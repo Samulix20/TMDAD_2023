@@ -1,5 +1,7 @@
-package com.example.websockets.security
+package com.example.websockets.controllers
 
+import com.example.websockets.services.HashService
+import com.example.websockets.services.TokenService
 import com.example.websockets.dto.TokenResponse
 import com.example.websockets.dto.UserLoginInfo
 import com.example.websockets.entities.ChatUser
@@ -32,5 +34,11 @@ class LoginController (
             throw ResponseStatusException(400, "Login Failed", null)
         }
         return TokenResponse(tokenService.createToken(user))
+    }
+
+    @GetMapping("/secured")
+    @ResponseBody
+    fun secured() : String {
+        return "SECURED"
     }
 }

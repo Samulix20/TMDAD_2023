@@ -26,10 +26,5 @@ services:
     ports:
       - 8080:80
     volumes:
-      - ./frontend:/usr/share/nginx/html
-
-  backend:
-    build: ./websockets/
-    image: tmdad_spring
-    ports: 
-      - 9090:9090
+      - ./gateway/nginx.conf:/etc/nginx/nginx.conf
+      - ./static:/usr/share/nginx/html

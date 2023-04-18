@@ -1,4 +1,4 @@
-package com.example.websockets.security
+package com.example.websockets.services
 
 import org.springframework.security.crypto.bcrypt.BCrypt
 import org.springframework.stereotype.Service

@@ -100,7 +100,10 @@ async function onConnected() {
 }
 
 function onError(error) {
-    console.log('Error:', error.headers.message)
+    try {
+        console.error('Error:', error.headers.message);
+    } catch (e) {}
+    
     connectingElement.textContent = 'No fue posible conectar con WebSocket';
     connectingElement.style.color = 'red';
 }
