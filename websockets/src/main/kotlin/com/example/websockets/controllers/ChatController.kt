@@ -18,7 +18,7 @@ class ChatController (
              headerAccessor: SimpMessageHeaderAccessor) {
         chatMessage.sender = principal.name
         messageSender.convertAndSend(
-            "/topic/${chatMessage.receiver}",
+            "/topic/chat/${chatMessage.receiver}",
             chatMessage
         )
     }

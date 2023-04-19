@@ -1,5 +1,6 @@
 package com.example.websockets.config.websocket
 
+import com.example.websockets.entities.ChatUserRepository
 import com.example.websockets.services.TokenService
 import org.springframework.messaging.Message
 import org.springframework.messaging.MessageChannel
@@ -14,21 +15,19 @@ import org.springframework.stereotype.Component
 
 @Component
 class AuthorizationInterceptor (
-    val tokenService : TokenService
+    val tokenService : TokenService,
+    val userService: ChatUserRepository
 ) : ChannelInterceptor {
 
     override fun preSend(message: Message<*>, channel: MessageChannel): Message<*>? {
         val headerAccessor = MessageHeaderAccessor.getAccessor(message) as StompHeaderAccessor
 
         if(StompCommand.CONNECT == headerAccessor.command) {
-            // Throws exception if invalid token
             try {
-                val jwt = tokenService.jwt(headerAccessor.getNativeHeader("token")!![0])
-                headerAccessor.user = UsernamePasswordAuthenticationToken(
-                    jwt.subject,
-                    "",
-                    listOf(SimpleGrantedAuthority("USER"))
-                )
+                // Get token from header
+                val jwt = headerAccessor.getNativeHeader("token")!![0]
+                // Set auth
+                headerAccessor.user = tokenService.authorizationFromToken(jwt)
             } catch (e : JwtException) {
                 throw Exception("Websocket authorization error")
             }

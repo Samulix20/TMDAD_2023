@@ -25,14 +25,13 @@ class WebSecurityConfig (
             authorizeHttpRequests()
                 .requestMatchers(HttpMethod.POST, "/users/login").permitAll()
                 .requestMatchers(HttpMethod.POST, "/users/register").permitAll()
-                .requestMatchers(HttpMethod.GET, "/csrf").permitAll()
                 .requestMatchers("/websocket/**").permitAll()
+                .requestMatchers("/admin/**").hasRole("ADMIN")
                 .anyRequest().authenticated()
             oauth2ResourceServer().jwt()
             authenticationManager { auth ->
                 val jwt = auth as BearerTokenAuthenticationToken
-                val user = tokenService.userFromToken(jwt.token) ?: throw InvalidBearerTokenException("Invalid token")
-                UsernamePasswordAuthenticationToken(user, "", listOf(SimpleGrantedAuthority("USER")))
+                tokenService.authorizationFromToken(jwt.token)
             }
             sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS)
             csrf().disable()

@@ -2,7 +2,10 @@ package com.example.websockets.services;
 
 import com.example.websockets.entities.ChatUser
 import com.example.websockets.entities.ChatUserRepository
+import org.apache.tomcat.util.http.parser.Authorization
 import org.springframework.data.repository.findByIdOrNull
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
+import org.springframework.security.core.authority.SimpleGrantedAuthority
 import org.springframework.security.oauth2.jwt.JwsHeader
 import org.springframework.security.oauth2.jwt.Jwt
 import org.springframework.security.oauth2.jwt.JwtClaimsSet
@@ -40,7 +43,11 @@ class TokenService (
         }
     }
 
-    fun jwt(token: String): Jwt {
-        return jwtDecoder.decode(token)
+    fun authorizationFromToken(token: String) : UsernamePasswordAuthenticationToken {
+        val user = userFromToken(token)!!
+        return UsernamePasswordAuthenticationToken(
+            user.username, "",
+            listOf(SimpleGrantedAuthority("ROLE_"+user.role))
+        )
     }
 }

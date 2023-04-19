@@ -9,6 +9,7 @@ import org.springframework.stereotype.Repository
 class ChatUser(
     val username: String = "",
     val password: String = "",
+    val role: String = "USER",
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
     val id: Long = -1

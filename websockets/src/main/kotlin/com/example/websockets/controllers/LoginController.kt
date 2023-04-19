@@ -6,8 +6,10 @@ import com.example.websockets.dto.TokenResponse
 import com.example.websockets.dto.UserLoginInfo
 import com.example.websockets.entities.ChatUser
 import com.example.websockets.entities.ChatUserRepository
+import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.web.bind.annotation.*
 import org.springframework.web.server.ResponseStatusException
+import java.security.Principal
 
 @RestController
 @RequestMapping("/users")
@@ -38,6 +40,6 @@ class LoginController (
     @GetMapping("/secured")
     @ResponseBody
     fun secured() : String {
-        return "SECURED"
+        return SecurityContextHolder.getContext().authentication.toString()
     }
 }

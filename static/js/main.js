@@ -91,7 +91,9 @@ function login(event) {
 
 async function onConnected() {
     // Subscribe to the user topic
-    await stompClient.subscribe('/topic/' + username, onMessageReceived);
+    await stompClient.subscribe('/topic/chat/' + username, onMessageReceived);
+    // Subscribe to the admin mesages topic
+    await stompClient.subscribe('/topic/system/admin', onMessageReceived);
     connectingElement.classList.add('hidden');
 }
 
