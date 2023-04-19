@@ -1,4 +1,4 @@
-package com.example.websockets.config.web
+package com.example.websockets.config
 
 import com.example.websockets.services.TokenService
 import org.springframework.context.annotation.Bean
@@ -15,7 +15,7 @@ import org.springframework.security.web.SecurityFilterChain
 
 @Configuration
 @EnableWebSecurity
-class SecurityConfig (
+class WebSecurityConfig (
     val tokenService: TokenService
 ) {
     @Bean

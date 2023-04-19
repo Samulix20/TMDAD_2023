@@ -9,7 +9,6 @@ import com.example.websockets.entities.ChatUserRepository
 import org.springframework.web.bind.annotation.*
 import org.springframework.web.server.ResponseStatusException
 
-@CrossOrigin
 @RestController
 @RequestMapping("/users")
 class LoginController (

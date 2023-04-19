@@ -1,16 +1,22 @@
 'use strict';
 
-const backend_url = 'http://localhost:9090';
-const wsEnpoint = '/websocket';
-
+// Login page
 const usernamePage = document.querySelector('#username-page');
-const chatPage = document.querySelector('#chat-page');
 const usernameForm = document.querySelector('#usernameForm');
-const messageForm = document.querySelector('#messageForm');
-const messageInput = document.querySelector('#message');
-const messageArea = document.querySelector('#messageArea');
-const connectingElement = document.querySelector('#connecting');
 const loginInfoElement = document.querySelector('#logininfo');
+
+// Chat page
+const chatPage = document.querySelector('#chat-page');
+
+// Area for showing msgs
+const inboxName = document.querySelector('#inboxName');
+const messageArea = document.querySelector('#messageArea');
+const messageInput = document.querySelector('#message');
+const connectingElement = document.querySelector('#connecting');
+
+// Form for starting chats
+const chatStartForm = document.querySelector('#chatStartForm');
+
 
 let stompClient = null;
 let username = null;
@@ -27,10 +33,6 @@ function loginError(e, info) {
     loginInfoElement.style.color = 'red';
     loginInfoElement.style.backgroundColor = '#FFCCCB'
     loginInfoElement.classList.remove('hidden');
-}
-
-function register(event) {
-    console.log('Reg');
 }
 
 function login(event) {
@@ -50,14 +52,14 @@ function login(event) {
         let errStr = null
 
         if (event.submitter.id == 'register') {
-            endpoint = '/users/register'
+            endpoint = '/api/users/register'
             errStr = 'Register'
         } else {
-            endpoint = '/users/login'
+            endpoint = '/api/users/login'
             errStr = 'Login'
         }
         
-        fetch(backend_url + endpoint, {
+        fetch(endpoint, {
             method: 'POST',
             mode: 'cors',
             headers: {
@@ -69,9 +71,10 @@ function login(event) {
         .then(x => x.json())
         .then(data => {
             jwtToken = data.token;
+            inboxName.innerHTML = username + "'s Inbox"
             usernamePage.classList.add('hidden');
             chatPage.classList.remove('hidden');
-            const socket = new SockJS(backend_url + wsEnpoint);
+            const socket = new SockJS('/api/websocket');
             stompClient = Stomp.over(socket);
             var stompHeaders = {};
             stompHeaders['token'] = jwtToken;
@@ -87,16 +90,27 @@ function login(event) {
 }
 
 async function onConnected() {
-    // Subscribe to the Public Topic
-    await stompClient.subscribe('/topic/public', onMessageReceived);
-
-    // Tell your username to the server
-    stompClient.send("/app/chat.register",
-        {},
-        JSON.stringify({sender: username, group: 'public', type: 'JOIN'})
-    )
-
+    // Subscribe to the user topic
+    await stompClient.subscribe('/topic/' + username, onMessageReceived);
     connectingElement.classList.add('hidden');
+}
+
+function startChat(event) {
+    event.preventDefault();
+
+    let msgReceiver = document.querySelector('#userStart').value.trim();
+    let msgContent = document.querySelector('#messageStart').value.trim();
+
+    if(msgReceiver && msgContent && stompClient) {
+        let msg = {
+            content: msgContent,
+            receiver: msgReceiver,
+            type: 'CHAT'
+        }
+        stompClient.send("/app/chat.send", {}, JSON.stringify(msg));
+    }
+
+    chatStartForm.reset();
 }
 
 function onError(error) {
@@ -106,23 +120,6 @@ function onError(error) {
     
     connectingElement.textContent = 'No fue posible conectar con WebSocket';
     connectingElement.style.color = 'red';
-}
-
-function send(event) {
-    const messageContent = messageInput.value.trim();
-
-    if(messageContent && stompClient) {
-        const chatMessage = {
-            sender: username,
-            content: messageInput.value,
-            group: 'public',
-            type: 'CHAT'
-        };
-
-        stompClient.send("/app/chat.send", {}, JSON.stringify(chatMessage));
-        messageInput.value = '';
-    }
-    event.preventDefault();
 }
 
 function onMessageReceived(payload) {
@@ -173,6 +170,5 @@ function getAvatarColor(messageSender) {
 }
 
 usernameForm.addEventListener('submit', login, true);
-messageForm.addEventListener('submit', send, true);
-
+chatStartForm.addEventListener('submit', startChat, true);
 

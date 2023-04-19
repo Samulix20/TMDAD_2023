@@ -12,21 +12,13 @@ import java.security.Principal
 class ChatController (
     val messageSender: SimpMessageSendingOperations
 ) {
-    @MessageMapping("/chat.register")
-    fun register(@Payload chatMessage: ChatMessage,
-                 headerAccessor: SimpMessageHeaderAccessor) {
-        messageSender.convertAndSend(
-            "/topic/${chatMessage.group}",
-            chatMessage
-        )
-    }
-
     @MessageMapping("/chat.send")
     fun chat(@Payload chatMessage: ChatMessage,
-             headerAccessor: SimpMessageHeaderAccessor,
-             principal: Principal) {
+             principal: Principal,
+             headerAccessor: SimpMessageHeaderAccessor) {
+        chatMessage.sender = principal.name
         messageSender.convertAndSend(
-            "/topic/${chatMessage.group}",
+            "/topic/${chatMessage.receiver}",
             chatMessage
         )
     }

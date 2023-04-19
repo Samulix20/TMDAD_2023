@@ -35,41 +35,29 @@
 </div>
 
 <div class="hidden" id="chat-page">
+    
+    <div class="chat-container" style="height: auto;">
+        <form class="messageForm" id="chatStartForm" name="chatStartForm" nameForm="chatStartForm">
+            <div class="form-group">
+                <div class="input-group clearfix">
+                    <input autocomplete="off" class="form-control" id="userStart" placeholder="Destination..."
+                           type="text" style="width: 20%; margin-right: 5px;"/>
+                    <input autocomplete="off" class="form-control" id="messageStart" placeholder="Message..."
+                           type="text" style="width: calc(75% - 70px);"/>
+                    <button class="primary" type="submit">Send</button>
+                </div>
+            </div>
+        </form>
+    </div>
+    
     <div class="chat-container">
         <div class="chat-header">
-            <h2>ChatBox</h2>
+            <h2 id="inboxName">Inbox</h2>
         </div>
         <div class="connecting" id="connecting" name="connecting">Conectando al chat...</div>
         <ul id="messageArea">
 
         </ul>
-        <form class="messageForm" id="messageForm" name="messageForm" nameForm="messageForm">
-            <div class="form-group">
-                <div class="input-group clearfix">
-                    <input autocomplete="off" class="form-control" id="message" placeholder="Escribe un mensaje..."
-                           type="text"/>
-                    <button class="primary" type="submit">Enviar</button>
-                </div>
-            </div>
-        </form>
-    </div>
-
-    <div class="chat-container">
-        <div class="chat-header">
-            <h2>Chat 2</h2>
-        </div>
-        <ul id="messageArea2">
-
-        </ul>
-        <form class="messageForm" id="messageForm2" name="messageForm" nameForm="messageForm">
-            <div class="form-group">
-                <div class="input-group clearfix">
-                    <input autocomplete="off" class="form-control" id="message2" placeholder="Escribe un mensaje..."
-                           type="text"/>
-                    <button class="primary" type="submit">Enviar</button>
-                </div>
-            </div>
-        </form>
     </div>
 </div>
 
