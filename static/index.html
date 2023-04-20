@@ -35,6 +35,36 @@
 </div>
 
 <div class="hidden" id="chat-page">
+
+    <div class="chat-container" style="height: auto; text-align: center;">
+        <i id="notif">Hello!</i>
+    </div>
+
+    <div class="chat-container" style="height: auto;">
+        <form class="messageForm" id="createGroupForm" name="createGroupForm" nameForm="createGroupForm">
+            <div class="form-group">
+                <div class="input-group clearfix">
+                    <input autocomplete="off" class="form-control" id="groupName" placeholder="Group name..."
+                           type="text" style="width: 80%;"/>
+                    <button class="primary" type="submit" style="width: auto;">Create Group</button>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <div class="chat-container" style="height: auto;">
+        <form class="messageForm" id="addGroupForm" name="addGroupForm" nameForm="addGroupForm">
+            <div class="form-group">
+                <div class="input-group clearfix">
+                    <input autocomplete="off" class="form-control" id="userAdd" placeholder="User..."
+                           type="text" style="width: 46%; margin-right: 5px;"/>
+                    <input autocomplete="off" class="form-control" id="groupAdd" placeholder="Group..."
+                           type="text" style="width: calc(46% - 70px);"/>
+                    <button class="primary" type="submit">Add</button>
+                </div>
+            </div>
+        </form>
+    </div>
     
     <div class="chat-container" style="height: auto;">
         <form class="messageForm" id="chatStartForm" name="chatStartForm" nameForm="chatStartForm">

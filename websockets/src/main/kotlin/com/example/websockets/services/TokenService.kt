@@ -45,9 +45,10 @@ class TokenService (
 
     fun authorizationFromToken(token: String) : UsernamePasswordAuthenticationToken {
         val user = userFromToken(token)!!
-        return UsernamePasswordAuthenticationToken(
+        val upa = UsernamePasswordAuthenticationToken(
             user.username, "",
-            listOf(SimpleGrantedAuthority("ROLE_"+user.role))
-        )
+            listOf(SimpleGrantedAuthority("ROLE_"+user.role)))
+        upa.details = user.id
+        return upa
     }
 }

@@ -17,6 +17,13 @@ const connectingElement = document.querySelector('#connecting');
 // Form for starting chats
 const chatStartForm = document.querySelector('#chatStartForm');
 
+// Create group
+const createGroupForm = document.querySelector('#createGroupForm');
+// Add to group
+const addToGroupForm = document.querySelector('#addGroupForm');
+
+// Notification
+const notificationText = document.querySelector('#notif');
 
 let stompClient = null;
 let username = null;
@@ -94,7 +101,10 @@ async function onConnected() {
     await stompClient.subscribe('/topic/chat/' + username, onMessageReceived);
     // Subscribe to the admin mesages topic
     await stompClient.subscribe('/topic/system/admin', onMessageReceived);
+    // Subscribe to the system personal notifications topic
+    await stompClient.subscribe('/topic/system/notifications/' + username, onNotificationReceived);
     connectingElement.classList.add('hidden');
+    stompClient.send("/app/chat.getGroups", {}, "")
 }
 
 function startChat(event) {
@@ -115,6 +125,38 @@ function startChat(event) {
     chatStartForm.reset();
 }
 
+function createGroup(event) {
+    event.preventDefault();
+
+    let gn = document.querySelector('#groupName').value.trim();
+
+    if(gn && stompClient) {
+        let msg = {
+            target: gn
+        }
+        stompClient.send("/app/chat.createGroup", {}, JSON.stringify(msg));
+    }
+    
+    createGroupForm.reset();
+}
+
+function addUserToGroup(event) {
+    event.preventDefault();
+
+    let group = document.querySelector('#groupAdd').value.trim();
+    let user = document.querySelector('#userAdd').value.trim();
+
+    if(group && user && stompClient) {
+        let msg = {
+            target: group,
+            name: user
+        }
+        stompClient.send("/app/chat.addToGroup", {}, JSON.stringify(msg));
+    }
+    
+    createGroupForm.reset();
+}
+
 function onError(error) {
     try {
         console.error('Error:', error.headers.message);
@@ -122,6 +164,23 @@ function onError(error) {
     
     connectingElement.textContent = 'No fue posible conectar con WebSocket';
     connectingElement.style.color = 'red';
+}
+
+function onNotificationReceived(payload) {
+    let notification = JSON.parse(payload.body);
+    notificationText.innerHTML = JSON.stringify(notification);
+
+    if( notification.type === 'GROUP_CREATED' ||
+        notification.type === 'ADDED_TO_GROUP') {
+        // ONLY FOR DEMO
+        // TODO CHANGE TOPIC FOR GROUP
+        stompClient.subscribe('/topic/chat/' + notification.info, onMessageReceived);
+
+    } else if (notification.type === 'GROUP_LIST') {
+        notification.groups.forEach(element => {
+            stompClient.subscribe('/topic/chat/' + element, onNotificationReceived);
+        });
+    }
 }
 
 function onMessageReceived(payload) {
@@ -173,4 +232,5 @@ function getAvatarColor(messageSender) {
 
 usernameForm.addEventListener('submit', login, true);
 chatStartForm.addEventListener('submit', startChat, true);
-
+createGroupForm.addEventListener('submit', createGroup, true);
+addToGroupForm.addEventListener('submit', addUserToGroup, true)

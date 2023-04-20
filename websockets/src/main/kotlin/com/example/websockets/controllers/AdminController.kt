@@ -27,7 +27,7 @@ class AdminController (
                 ChatMessage(
                     sender = principal.name,
                     receiver = "",
-                    content = message.content,
+                    content = message.content!!,
                     type = MessageType.CHAT
                 )
             )
