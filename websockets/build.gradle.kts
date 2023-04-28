@@ -23,6 +23,8 @@ dependencies {
 	implementation("org.springframework.security:spring-security-messaging")
 	implementation("org.springframework.security:spring-security-oauth2-resource-server")
 	implementation("org.springframework.security:spring-security-oauth2-jose")
+	implementation("com.jlefebure:spring-boot-starter-minio:1.10")
+	implementation("io.minio:minio:8.5.2")
 	runtimeOnly("org.postgresql:postgresql")
 	testImplementation("org.springframework.boot:spring-boot-starter-test")
 }

@@ -4,12 +4,9 @@ import com.example.websockets.services.TokenService
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.http.HttpMethod
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
 import org.springframework.security.config.annotation.web.builders.HttpSecurity
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity
 import org.springframework.security.config.http.SessionCreationPolicy
-import org.springframework.security.core.authority.SimpleGrantedAuthority
-import org.springframework.security.oauth2.server.resource.InvalidBearerTokenException
 import org.springframework.security.oauth2.server.resource.authentication.BearerTokenAuthenticationToken
 import org.springframework.security.web.SecurityFilterChain
 
@@ -27,6 +24,7 @@ class WebSecurityConfig (
                 .requestMatchers(HttpMethod.POST, "/users/register").permitAll()
                 .requestMatchers("/websocket/**").permitAll()
                 .requestMatchers("/admin/**").hasRole("ADMIN")
+                .requestMatchers("/files/**").permitAll()
                 .anyRequest().authenticated()
             oauth2ResourceServer().jwt()
             authenticationManager { auth ->

@@ -25,6 +25,9 @@ const addToGroupForm = document.querySelector('#addGroupForm');
 // Notification
 const notificationText = document.querySelector('#notif');
 
+// Cached files
+const fileCache = new Map();
+
 let stompClient = null;
 let username = null;
 let jwtToken = null;
@@ -112,17 +115,33 @@ function startChat(event) {
 
     let msgReceiver = document.querySelector('#userStart').value.trim();
     let msgContent = document.querySelector('#messageStart').value.trim();
+    let msgAttch = document.querySelector('#fileAttch').files;
+    let msg;
 
-    if(msgReceiver && msgContent && stompClient) {
-        let msg = {
-            content: msgContent,
-            receiver: msgReceiver,
-            type: 'CHAT'
+    if(msgReceiver && stompClient) {
+        if(msgAttch.length > 0) {
+            let attchUUID;
+            for (var i = 0; i < msgAttch.length; i++) {
+                attchUUID = crypto.randomUUID()
+                fileCache.set(attchUUID, msgAttch[i]);
+            }
+            msg = {
+                content: attchUUID,
+                receiver: msgReceiver,
+                type: 'ATTACHMENT'
+            }
+        } else if (msgContent) {
+            msg = {
+                content: msgContent,
+                receiver: msgReceiver,
+                type: 'CHAT'
+            }
+        } else {
+            return;
         }
         stompClient.send("/app/chat.send", {}, JSON.stringify(msg));
+        chatStartForm.reset();
     }
-
-    chatStartForm.reset();
 }
 
 function createGroup(event) {
@@ -178,7 +197,15 @@ function onNotificationReceived(payload) {
 
     } else if (notification.type === 'GROUP_LIST') {
         notification.groups.forEach(element => {
-            stompClient.subscribe('/topic/chat/' + element, onNotificationReceived);
+            stompClient.subscribe('/topic/chat/' + element, onMessageReceived);
+        });
+
+    } else if (notification.type == 'UPLOAD_FILE') {
+        fetch(notification.url, {
+            method: 'PUT',
+            body: fileCache.get(notification.uuid)
+        }).catch((e) => {
+            console.log(e);
         });
     }
 }
@@ -211,9 +238,13 @@ function onMessageReceived(payload) {
     }
 
     const textElement = document.createElement('p');
-    const messageText = document.createTextNode(message.content);
-    textElement.appendChild(messageText);
 
+    if(message.type === 'ATTACHMENT') {
+        textElement.innerHTML = "<a href=\"" + message.content + "\">file</a>";
+    } else {
+        const messageText = document.createTextNode(message.content);
+        textElement.appendChild(messageText);
+    }
     messageElement.appendChild(textElement);
 
     messageArea.appendChild(messageElement);
