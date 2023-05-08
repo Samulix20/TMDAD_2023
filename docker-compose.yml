@@ -28,3 +28,15 @@ services:
     volumes:
       - ./gateway/nginx.conf:/etc/nginx/nginx.conf
       - ./static:/usr/share/nginx/html
+
+  minio:
+    image: minio/minio
+    ports:
+      - "9001:9001"
+      - "9000:9000"
+    volumes:
+      - ./minio_data:/data
+    environment:
+      MINIO_ROOT_USER: tmdad
+      MINIO_ROOT_PASSWORD: tmdad#tmdad#tmdad
+    command: server --console-address ":9001" /data

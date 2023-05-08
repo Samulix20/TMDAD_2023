@@ -122,7 +122,8 @@ function startChat(event) {
         if(msgAttch.length > 0) {
             let attchUUID;
             for (var i = 0; i < msgAttch.length; i++) {
-                attchUUID = crypto.randomUUID()
+                // Add file type extension to directly download using the attchUUID
+                attchUUID = crypto.randomUUID() + '.' + msgAttch[i].name.split('.').pop()
                 fileCache.set(attchUUID, msgAttch[i]);
             }
             msg = {
@@ -207,7 +208,24 @@ function onNotificationReceived(payload) {
         }).catch((e) => {
             console.log(e);
         });
+        fileCache.delete(notification.uuid)
     }
+}
+
+async function downloadFile(name) {
+    const image = await fetch("/api/files/" + name, {
+        mode: "cors",
+        headers: {'Authorization': 'Bearer ' + jwtToken}
+    });
+    const imageBlob = await image.blob();
+    const imageURL = URL.createObjectURL(imageBlob);
+    const anchor = document.createElement("a");
+    anchor.href = imageURL;
+    anchor.download = name;
+    document.body.appendChild(anchor);
+    anchor.click();
+    document.body.removeChild(anchor);
+    URL.revokeObjectURL(imageURL);
 }
 
 function onMessageReceived(payload) {
@@ -240,7 +258,16 @@ function onMessageReceived(payload) {
     const textElement = document.createElement('p');
 
     if(message.type === 'ATTACHMENT') {
-        textElement.innerHTML = "<a href=\"" + message.content + "\">file</a>";
+        //textElement.innerHTML = "<a href=\"/api/files/" +  message.content + "\">Download file</a>";
+
+        var inputElement = document.createElement('button');
+        inputElement.innerHTML = "Download File";
+        inputElement.setAttribute("name", message.content);
+        inputElement.addEventListener('click', function(event){
+            downloadFile(event.target.getAttribute('name'));
+        });
+        textElement.appendChild(inputElement)
+
     } else {
         const messageText = document.createTextNode(message.content);
         textElement.appendChild(messageText);

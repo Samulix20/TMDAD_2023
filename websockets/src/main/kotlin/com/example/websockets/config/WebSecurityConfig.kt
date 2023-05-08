@@ -24,7 +24,7 @@ class WebSecurityConfig (
                 .requestMatchers(HttpMethod.POST, "/users/register").permitAll()
                 .requestMatchers("/websocket/**").permitAll()
                 .requestMatchers("/admin/**").hasRole("ADMIN")
-                .requestMatchers("/files/**").permitAll()
+                .requestMatchers("/files/**").authenticated()
                 .anyRequest().authenticated()
             oauth2ResourceServer().jwt()
             authenticationManager { auth ->

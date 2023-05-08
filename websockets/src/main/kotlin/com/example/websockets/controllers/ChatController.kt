@@ -33,17 +33,15 @@ class ChatController (
         chatMessage.sender = principal.name
 
         if(chatMessage.type == MessageType.ATTACHMENT) {
-            val urls = customMinioService.createPreSignedUrls(chatMessage.content)
             val notification = UploadFileNotification(
                 NotificationType.UPLOAD_FILE,
-                urls.first,
+                customMinioService.createPreSignedUrl(chatMessage.content),
                 chatMessage.content
             )
             messageSender.convertAndSend(
                 "/topic/system/notifications/${principal.name}",
                 notification
             )
-            chatMessage.content = urls.second
         }
 
         // TODO: CHECK IF RECEIVER EXISTS

@@ -7,82 +7,83 @@ import io.minio.GetPresignedObjectUrlArgs
 import io.minio.MinioClient
 import jakarta.servlet.http.HttpServletResponse
 import org.apache.commons.compress.utils.IOUtils
+import org.springframework.boot.context.properties.ConfigurationProperties
+import org.springframework.context.annotation.Configuration
 import org.springframework.core.io.InputStreamResource
 import org.springframework.stereotype.Service
 import org.springframework.web.bind.annotation.*
-import org.springframework.web.multipart.MultipartFile
 import java.io.IOException
 import java.io.InputStream
-import java.lang.reflect.Method
 import java.net.URLConnection
 import java.nio.file.Path
-import java.util.UUID
 import java.util.concurrent.TimeUnit
-import kotlin.math.min
 
-fun createMinioConfig(): MinioConfigurationProperties {
-    val c = MinioConfigurationProperties()
-    c.bucket = "tmdad"
-    c.url = "http://localhost:9000"
-    c.accessKey = "IJNC0Jsf08qpRao0"
-    c.secretKey = "gWhhm4UYiVbIyGQCqOUTxG41R2R3cfvN"
-    c.isSecure = false
-    return c
+@Configuration
+@ConfigurationProperties("custom.minio")
+data class CustomMinioConfig (
+    var accessKey: String = "",
+    var secretKey: String = "",
+    var bucket: String = "",
+    var endpoint: String = "",
+    var port: String = ""
+) {
+    var url = "http://${endpoint}:${port}"
+
+    fun createMinioConfig(): MinioConfigurationProperties {
+        val c = MinioConfigurationProperties()
+        c.bucket = bucket
+        c.url = url
+        c.accessKey = accessKey
+        c.secretKey = secretKey
+        c.isSecure = false
+        return c
+    }
+
+    fun createMinioClient(): MinioClient {
+        return MinioClient.builder()
+            .endpoint(endpoint, port.toInt(), false)
+            .credentials(accessKey, secretKey)
+            .build()
+    }
+
+    fun createMinioService() : MinioService {
+        return MinioService(createMinioClient(), createMinioConfig())
+    }
 }
 
 @Service
-class CustomMinioService  {
-    private val accessKey = "IJNC0Jsf08qpRao0"
-    private val secretKey = "gWhhm4UYiVbIyGQCqOUTxG41R2R3cfvN"
+class CustomMinioService  (
+    val config: CustomMinioConfig
+){
 
-    private val minioClient : MinioClient = MinioClient.builder()
-        .endpoint("localhost", 9000, false)
-        .credentials(accessKey, secretKey)
-        .build()
+    private val minioClient : MinioClient = config.createMinioClient()
 
-    /*
-    writeUrl, readUrl
-    */
-    fun createPreSignedUrls(uuid: String): Pair<String, String> {
-
-        val writeUrl = minioClient.getPresignedObjectUrl(
+    fun createPreSignedUrl(uuid: String): String {
+        return minioClient.getPresignedObjectUrl(
             GetPresignedObjectUrlArgs.builder()
                 .method(io.minio.http.Method.PUT)
-                .bucket("tmdad")
+                .bucket(config.bucket)
                 .`object`(uuid)
                 .expiry(2, TimeUnit.HOURS)
-                .build())
-
-        val readUrl = minioClient.getPresignedObjectUrl(
-            GetPresignedObjectUrlArgs.builder()
-                .method(io.minio.http.Method.GET)
-                .bucket("tmdad")
-                .`object`(uuid)
-                .expiry(7, TimeUnit.DAYS)
-                .build())
-
-        return writeUrl to readUrl
+                .build()
+        )
     }
 }
 
-/*
+// Based of https://github.com/jlefebure/spring-boot-starter-minio example
 @RestController
 @RequestMapping("/files")
-class TestController {
-    private val minioClient : MinioClient = MinioClient.builder()
-        .endpoint("localhost", 9000, false)
-        .credentials("IJNC0Jsf08qpRao0", "gWhhm4UYiVbIyGQCqOUTxG41R2R3cfvN")
-        .build()
-    private val minioService: MinioService = MinioService(minioClient, createMinioConfig())
-    @GetMapping("/")
-    @Throws(MinioException::class)
-    fun testMinio(): List<io.minio.messages.Item> {
-        return minioService.list()
-    }
+class MinioFilesRestEndpoint (
+    config: CustomMinioConfig
+) {
+    private val minioService: MinioService = config.createMinioService()
 
     @GetMapping("/{object}")
     @Throws(MinioException::class, IOException::class)
     fun getObject(@PathVariable("object") obj: String, response: HttpServletResponse) {
+
+        // TODO: CHECK IF REQUESTER CAN ACCESS THE FILE
+
         val inputStream: InputStream = minioService.get(Path.of(obj))
         val inputStreamResource = InputStreamResource(inputStream)
 
@@ -94,17 +95,4 @@ class TestController {
         IOUtils.copy(inputStream, response.outputStream)
         response.flushBuffer()
     }
-
-    @PostMapping("/")
-    fun addObject(@RequestParam("file") file: MultipartFile) {
-        val path = Path.of(file.originalFilename!!)
-        try {
-            minioService.upload(path, file.inputStream, file.contentType)
-        } catch (e: MinioException) {
-            throw IllegalStateException("The file cannot be upload on the internal storage. Please retry later", e)
-        } catch (e: IOException) {
-            throw IllegalStateException("The file cannot be read", e)
-        }
-    }
 }
- */
