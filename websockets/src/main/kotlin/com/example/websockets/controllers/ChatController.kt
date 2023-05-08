@@ -1,6 +1,7 @@
 package com.example.websockets.controllers
 
 import com.example.websockets.CustomMinioService
+import com.example.websockets.RabbitMqService
 import com.example.websockets.dto.*
 import com.example.websockets.entities.ChatGroup
 import com.example.websockets.entities.ChatGroupRepository
@@ -23,12 +24,19 @@ class ChatController (
     val messageSender: SimpMessageSendingOperations,
     val chatGroupRepository: ChatGroupRepository,
     val chatUserRepository: ChatUserRepository,
-    val customMinioService: CustomMinioService
+    val customMinioService: CustomMinioService,
+    val rabbitService: RabbitMqService,
 ) {
+
+    // Start user rabbit session
+    @MessageMapping("/chat.start")
+    fun start(principal: Principal){
+        rabbitService.startUserSession(principal.name)
+    }
+
     @MessageMapping("/chat.send")
     fun chat(@Payload chatMessage: ChatMessage,
-             principal: Principal,
-             headerAccessor: SimpMessageHeaderAccessor) {
+             principal: Principal) {
 
         chatMessage.sender = principal.name
 
@@ -38,6 +46,8 @@ class ChatController (
                 customMinioService.createPreSignedUrl(chatMessage.content),
                 chatMessage.content
             )
+
+            // Maybe move to rabbit?
             messageSender.convertAndSend(
                 "/topic/system/notifications/${principal.name}",
                 notification
@@ -46,16 +56,16 @@ class ChatController (
 
         // TODO: CHECK IF RECEIVER EXISTS
 
-        messageSender.convertAndSend(
-            "/topic/chat/${chatMessage.receiver}",
-            chatMessage
-        )
+        // TODO: ATM GROUP MESSAGES ARE NOT WORKING
+
+        // Publish message
+        rabbitService.publish(chatMessage)
     }
 
     @MessageMapping("/chat.createGroup")
     fun createGroup(@Payload message: GroupOperationMessage,
-                    principal: Principal,
-                    headerAccessor: SimpMessageHeaderAccessor) {
+                    principal: Principal) {
+
         val userId = SecurityContextHolder.getContext().authentication.details as Long
         val user = chatUserRepository.findByIdOrNull(userId)!!
         val group = ChatGroup(name = message.target!!, admin = user)
@@ -70,8 +80,8 @@ class ChatController (
     @Transactional
     @MessageMapping("/chat.addToGroup")
     fun addToGroup(@Payload message: GroupOperationMessage,
-                   principal: Principal,
-                   headerAccessor: SimpMessageHeaderAccessor) {
+                   principal: Principal) {
+
         val userId = SecurityContextHolder.getContext().authentication.details as Long
         val group = chatGroupRepository.findByName(message.target)!!
         if(group.admin.id != userId) {
@@ -88,8 +98,8 @@ class ChatController (
     }
 
     @MessageMapping("/chat.getGroups")
-    fun getGroups(principal: Principal,
-                  headerAccessor: SimpMessageHeaderAccessor) {
+    fun getGroups(principal: Principal) {
+
         val userId = SecurityContextHolder.getContext().authentication.details as Long
         val user = chatUserRepository.findByIdOrNull(userId)!!
         val groupNameList = mutableListOf<String>()

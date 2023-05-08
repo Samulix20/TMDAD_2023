@@ -1,5 +1,6 @@
 package com.example.websockets.controllers
 
+import com.example.websockets.RabbitMqService
 import com.example.websockets.services.HashService
 import com.example.websockets.services.TokenService
 import com.example.websockets.dto.TokenResponse

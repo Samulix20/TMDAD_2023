@@ -40,3 +40,14 @@ services:
       MINIO_ROOT_USER: tmdad
       MINIO_ROOT_PASSWORD: tmdad#tmdad#tmdad
     command: server --console-address ":9001" /data
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    environment:
+      RABBITMQ_DEFAULT_USER: tmdad
+      RABBITMQ_DEFAULT_PASS: tmdad
+    volumes:
+      - ./rabbit_data:/var/lib/rabbitmq/mnesia/
+    ports:
+      - "5672:5672"
+      - "15672:15672"

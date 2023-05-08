@@ -107,6 +107,7 @@ async function onConnected() {
     // Subscribe to the system personal notifications topic
     await stompClient.subscribe('/topic/system/notifications/' + username, onNotificationReceived);
     connectingElement.classList.add('hidden');
+    stompClient.send("/app/chat.start", {}, "")
     stompClient.send("/app/chat.getGroups", {}, "")
 }
 

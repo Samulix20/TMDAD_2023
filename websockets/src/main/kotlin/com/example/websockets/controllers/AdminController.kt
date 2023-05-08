@@ -1,5 +1,6 @@
 package com.example.websockets.controllers
 
+import com.example.websockets.RabbitMqService
 import com.example.websockets.dto.AdminMessage
 import com.example.websockets.dto.ChatMessage
 import com.example.websockets.dto.MessageType
@@ -14,7 +15,7 @@ import java.security.Principal
 @RestController
 @RequestMapping("/admin")
 class AdminController (
-    val messageSender: SimpMessageSendingOperations
+    val rabbitService: RabbitMqService
 ) {
     @PostMapping("/send")
     fun register(
@@ -22,14 +23,13 @@ class AdminController (
         principal : Principal
     ) {
         try {
-            messageSender.convertAndSend(
-                "/topic/system/admin",
+            rabbitService.publish(
                 ChatMessage(
                     sender = principal.name,
                     receiver = "",
                     content = message.content!!,
                     type = MessageType.CHAT
-                )
+                ), "adminMsg"
             )
         } catch (e: Exception) {
             throw ResponseStatusException(400, "Admin send error", null)
