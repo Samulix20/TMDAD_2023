@@ -102,8 +102,6 @@ function login(event) {
 async function onConnected() {
     // Subscribe to the user topic
     await stompClient.subscribe('/topic/chat/' + username, onMessageReceived);
-    // Subscribe to the admin mesages topic
-    await stompClient.subscribe('/topic/system/admin', onMessageReceived);
     // Subscribe to the system personal notifications topic
     await stompClient.subscribe('/topic/system/notifications/' + username, onNotificationReceived);
     connectingElement.classList.add('hidden');
@@ -117,9 +115,13 @@ function startChat(event) {
     let msgReceiver = document.querySelector('#userStart').value.trim();
     let msgContent = document.querySelector('#messageStart').value.trim();
     let msgAttch = document.querySelector('#fileAttch').files;
+    let msgReceiverType = document.querySelector('#sendRcvType').value;
     let msg;
 
     if(msgReceiver && stompClient) {
+
+        let tg = msgReceiverType === 'group';
+
         if(msgAttch.length > 0) {
             let attchUUID;
             for (var i = 0; i < msgAttch.length; i++) {
@@ -129,18 +131,21 @@ function startChat(event) {
             }
             msg = {
                 content: attchUUID,
+                toGroup: tg,
                 receiver: msgReceiver,
                 type: 'ATTACHMENT'
             }
         } else if (msgContent) {
             msg = {
                 content: msgContent,
+                toGroup: tg,
                 receiver: msgReceiver,
                 type: 'CHAT'
             }
         } else {
             return;
         }
+
         stompClient.send("/app/chat.send", {}, JSON.stringify(msg));
         chatStartForm.reset();
     }
@@ -175,7 +180,7 @@ function addUserToGroup(event) {
         stompClient.send("/app/chat.addToGroup", {}, JSON.stringify(msg));
     }
     
-    createGroupForm.reset();
+    addToGroupForm.reset();
 }
 
 function onError(error) {
@@ -191,18 +196,7 @@ function onNotificationReceived(payload) {
     let notification = JSON.parse(payload.body);
     notificationText.innerHTML = JSON.stringify(notification);
 
-    if( notification.type === 'GROUP_CREATED' ||
-        notification.type === 'ADDED_TO_GROUP') {
-        // ONLY FOR DEMO
-        // TODO CHANGE TOPIC FOR GROUP
-        stompClient.subscribe('/topic/chat/' + notification.info, onMessageReceived);
-
-    } else if (notification.type === 'GROUP_LIST') {
-        notification.groups.forEach(element => {
-            stompClient.subscribe('/topic/chat/' + element, onMessageReceived);
-        });
-
-    } else if (notification.type == 'UPLOAD_FILE') {
+    if (notification.type == 'UPLOAD_FILE') {
         fetch(notification.url, {
             method: 'PUT',
             body: fileCache.get(notification.uuid)

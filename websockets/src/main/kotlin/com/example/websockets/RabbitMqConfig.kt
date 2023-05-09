@@ -8,8 +8,11 @@ import com.rabbitmq.client.DefaultConsumer
 import com.rabbitmq.client.Envelope
 import org.springframework.boot.context.properties.ConfigurationProperties
 import org.springframework.context.annotation.Configuration
+import org.springframework.context.event.EventListener
 import org.springframework.messaging.simp.SimpMessageSendingOperations
+import org.springframework.stereotype.Component
 import org.springframework.stereotype.Service
+import org.springframework.web.socket.messaging.SessionDisconnectEvent
 
 @Configuration
 @ConfigurationProperties("custom.rabbitmq")
@@ -40,6 +43,9 @@ class RabbitMqService (
     val channel = conn.createChannel()
     val gson = Gson()
 
+    // sessionID -> consumerID
+    val sessionCache : HashMap<String, String> = HashMap()
+
     init {
         // Declare direct message exchange
         channel.exchangeDeclare("directMsg", "direct", true)
@@ -59,12 +65,12 @@ class RabbitMqService (
     }
 
     fun bindUserToGroup(groupName: String, username: String) {
-        channel.queueBind(username, groupName, username)
+        channel.queueBind(username, "groups/$groupName", username)
     }
 
-    fun startUserSession(username : String) {
+    fun startUserSession(username : String, sessionID : String) {
         // Use username as consumer
-        channel.basicConsume(username, true, username,
+        val consumerID = channel.basicConsume(username, true, username,
             object : DefaultConsumer(channel) {
                 override fun handleDelivery(
                     consumerTag: String,
@@ -75,15 +81,33 @@ class RabbitMqService (
                     val msg = gson.fromJson(String(body), ChatMessage::class.java)
                     // Send message back to user
                     socketMessageSender.convertAndSend(
-                        "/topic/chat/${msg.receiver}",
+                        "/topic/chat/$username",
                         msg
                     )
                 }
             })
+        // Store session
+        sessionCache[sessionID] = consumerID
+    }
+
+    fun endSession(sessionID: String) {
+        val consumerID = sessionCache[sessionID]
+        sessionCache.remove(sessionID)
+        channel.basicCancel(consumerID)
     }
 
     fun publish(msg: ChatMessage, exchange: String = "directMsg") {
         channel.basicPublish(exchange, msg.receiver, null, gson.toJson(msg).toByteArray())
     }
 
+}
+
+@Component
+class WebSocketEventListener (
+    val rabbitService: RabbitMqService
+) {
+    @EventListener
+    fun handleSessionDisconnect(event : SessionDisconnectEvent) {
+        rabbitService.endSession(event.sessionId)
+    }
 }

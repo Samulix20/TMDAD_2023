@@ -1,3 +1,5 @@
+#!/bin/bash
+
 rm -rf database/data/*
 mkdir -p database/data
 rm -rf minio_data/*

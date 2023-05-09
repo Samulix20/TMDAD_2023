@@ -31,18 +31,29 @@ class ChatController (
 
     // Start user rabbit session
     @MessageMapping("/chat.start")
-    fun start(principal: Principal){
-        rabbitService.startUserSession(principal.name)
+    fun start(principal: Principal,
+              headerAccessor: SimpMessageHeaderAccessor){
+
+        rabbitService.startUserSession(principal.name, headerAccessor.sessionId!!)
     }
 
     @MessageMapping("/chat.send")
     fun chat(@Payload chatMessage: ChatMessage,
              principal: Principal) {
 
-        val group = chatGroupRepository.findByName(chatMessage.receiver)
+        // Which exchange is the message going to be published in
+        // Defaults to direct msg
+        var exchange = "directMsg"
 
+        // If the receiver is a group set correct exchange
+        if (chatMessage.toGroup!!) {
+            exchange = "groups/${chatMessage.receiver}"
+        }
+
+        // Set sender
         chatMessage.sender = principal.name
 
+        // If it's an attachment type msg do claim-check
         if(chatMessage.type == MessageType.ATTACHMENT) {
             val notification = UploadFileNotification(
                 NotificationType.UPLOAD_FILE,
@@ -50,7 +61,7 @@ class ChatController (
                 chatMessage.content
             )
 
-            // Maybe move to rabbit?
+            // TODO: Maybe move to rabbit?
             messageSender.convertAndSend(
                 "/topic/system/notifications/${principal.name}",
                 notification
@@ -58,7 +69,7 @@ class ChatController (
         }
 
         // Publish message
-        rabbitService.publish(chatMessage, group?.name ?: "directMsg")
+        rabbitService.publish(chatMessage, exchange)
     }
 
     @MessageMapping("/chat.createGroup")
@@ -92,7 +103,7 @@ class ChatController (
         user.groups.add(group)
         em.persist(user)
         // Bind user to group in rabbit
-        rabbitService.bindUserToGroup(user.username, group.name)
+        rabbitService.bindUserToGroup(group.name, user.username)
         val notif = GenericNotification(NotificationType.ADDED_TO_GROUP, group.name)
         messageSender.convertAndSend(
             "/topic/system/notifications/${user.username}",

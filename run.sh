@@ -1,3 +1,5 @@
+#!/bin/bash
+
 cd websockets
 ./gradlew clean build
 cd ..
