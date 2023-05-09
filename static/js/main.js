@@ -259,8 +259,6 @@ function onMessageReceived(payload) {
     const textElement = document.createElement('p');
 
     if(message.type === 'ATTACHMENT') {
-        //textElement.innerHTML = "<a href=\"/api/files/" +  message.content + "\">Download file</a>";
-
         var inputElement = document.createElement('button');
         inputElement.innerHTML = "Download File";
         inputElement.setAttribute("name", message.content);

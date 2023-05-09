@@ -17,13 +17,17 @@ import java.security.Principal
 class LoginController (
     val db : ChatUserRepository,
     val tokenService: TokenService,
-    val hashService: HashService
+    val hashService: HashService,
+    val rabbitService: RabbitMqService
 ) {
     @PostMapping("/register")
     fun register(@RequestBody payload: UserLoginInfo): TokenResponse {
         try {
             val savedUser = db.save(ChatUser(payload.username, hashService.hashBcrypt(payload.password)))
-            return TokenResponse(tokenService.createToken(savedUser))
+            val token = tokenService.createToken(savedUser)
+            rabbitService.createUserQueue(savedUser.username)
+            return TokenResponse(token)
+
         } catch (e: Exception) {
             throw ResponseStatusException(400, "Register failed", null)
         }

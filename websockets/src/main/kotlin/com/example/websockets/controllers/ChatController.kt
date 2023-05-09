@@ -9,6 +9,7 @@ import com.example.websockets.entities.ChatUserRepository
 import jakarta.persistence.EntityManager
 import jakarta.persistence.PersistenceContext
 import jakarta.transaction.Transactional
+import okhttp3.internal.notify
 import org.springframework.data.repository.findByIdOrNull
 import org.springframework.messaging.handler.annotation.MessageMapping
 import org.springframework.messaging.handler.annotation.Payload
@@ -38,6 +39,8 @@ class ChatController (
     fun chat(@Payload chatMessage: ChatMessage,
              principal: Principal) {
 
+        val group = chatGroupRepository.findByName(chatMessage.receiver)
+
         chatMessage.sender = principal.name
 
         if(chatMessage.type == MessageType.ATTACHMENT) {
@@ -54,12 +57,8 @@ class ChatController (
             )
         }
 
-        // TODO: CHECK IF RECEIVER EXISTS
-
-        // TODO: ATM GROUP MESSAGES ARE NOT WORKING
-
         // Publish message
-        rabbitService.publish(chatMessage)
+        rabbitService.publish(chatMessage, group?.name ?: "directMsg")
     }
 
     @MessageMapping("/chat.createGroup")
@@ -71,6 +70,8 @@ class ChatController (
         val group = ChatGroup(name = message.target!!, admin = user)
         chatGroupRepository.save(group)
         val notif = GenericNotification(NotificationType.GROUP_CREATED, message.target)
+        // Create group in rabbit
+        rabbitService.createGroupExchange(group.name, user.username)
         messageSender.convertAndSend(
             "/topic/system/notifications/${user.username}",
             notif
@@ -90,6 +91,8 @@ class ChatController (
         val user = chatUserRepository.findByUsername(message.name)!!
         user.groups.add(group)
         em.persist(user)
+        // Bind user to group in rabbit
+        rabbitService.bindUserToGroup(user.username, group.name)
         val notif = GenericNotification(NotificationType.ADDED_TO_GROUP, group.name)
         messageSender.convertAndSend(
             "/topic/system/notifications/${user.username}",

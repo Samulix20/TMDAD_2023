@@ -10,6 +10,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties
 import org.springframework.context.annotation.Configuration
 import org.springframework.messaging.simp.SimpMessageSendingOperations
 import org.springframework.stereotype.Service
+
 @Configuration
 @ConfigurationProperties("custom.rabbitmq")
 data class RabbitMqConfig (
@@ -44,11 +45,24 @@ class RabbitMqService (
         channel.exchangeDeclare("directMsg", "direct", true)
         channel.exchangeDeclare("adminMsg", "fanout", true)
     }
-    fun startUserSession(username : String) {
+
+    fun createUserQueue(username: String) {
         channel.queueDeclare(username, true, false, false, null)
         // Use username as routing key
         channel.queueBind(username, "directMsg", username)
         channel.queueBind(username, "adminMsg", username)
+    }
+
+    fun createGroupExchange(groupName: String, username: String) {
+        channel.exchangeDeclare("groups/$groupName", "fanout", true)
+        bindUserToGroup(groupName, username)
+    }
+
+    fun bindUserToGroup(groupName: String, username: String) {
+        channel.queueBind(username, groupName, username)
+    }
+
+    fun startUserSession(username : String) {
         // Use username as consumer
         channel.basicConsume(username, true, username,
             object : DefaultConsumer(channel) {
