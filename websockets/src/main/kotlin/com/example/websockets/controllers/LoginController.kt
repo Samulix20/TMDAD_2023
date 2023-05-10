@@ -1,12 +1,12 @@
 package com.example.websockets.controllers
 
-import com.example.websockets.RabbitMqService
 import com.example.websockets.services.HashService
 import com.example.websockets.services.TokenService
 import com.example.websockets.dto.TokenResponse
 import com.example.websockets.dto.UserLoginInfo
 import com.example.websockets.entities.ChatUser
 import com.example.websockets.entities.ChatUserRepository
+import com.example.websockets.services.RabbitMqService
 import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.web.bind.annotation.*
 import org.springframework.web.server.ResponseStatusException

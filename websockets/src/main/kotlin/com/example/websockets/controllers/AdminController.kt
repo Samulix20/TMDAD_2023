@@ -1,10 +1,9 @@
 package com.example.websockets.controllers
 
-import com.example.websockets.RabbitMqService
 import com.example.websockets.dto.AdminMessage
 import com.example.websockets.dto.ChatMessage
 import com.example.websockets.dto.MessageType
-import org.springframework.messaging.simp.SimpMessageSendingOperations
+import com.example.websockets.services.RabbitMqService
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping

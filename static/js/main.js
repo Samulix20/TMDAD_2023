@@ -248,6 +248,23 @@ function onMessageReceived(payload) {
         const usernameText = document.createTextNode(message.sender);
         usernameElement.appendChild(usernameText);
         messageElement.appendChild(usernameElement);
+
+        const receiverElement = document.createElement('span');
+        receiverElement.setAttribute(
+            "style", 
+            "color: #777; font-weight: normal; font-style: italic;"
+        );
+
+        let t = ""
+
+        // Direct msg
+        if(message.receiver === username) {
+            // pass
+        }
+        else t = " sent to " + message.receiver;
+
+        receiverElement.appendChild(document.createTextNode(t));
+        messageElement.appendChild(receiverElement);
     }
 
     const textElement = document.createElement('p');

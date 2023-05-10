@@ -1,38 +1,16 @@
-package com.example.websockets
+package com.example.websockets.services
 
+import com.example.websockets.config.RabbitMqConfig
 import com.example.websockets.dto.ChatMessage
 import com.nimbusds.jose.shaded.gson.Gson
 import com.rabbitmq.client.AMQP
-import com.rabbitmq.client.ConnectionFactory
 import com.rabbitmq.client.DefaultConsumer
 import com.rabbitmq.client.Envelope
-import org.springframework.boot.context.properties.ConfigurationProperties
-import org.springframework.context.annotation.Configuration
 import org.springframework.context.event.EventListener
 import org.springframework.messaging.simp.SimpMessageSendingOperations
 import org.springframework.stereotype.Component
 import org.springframework.stereotype.Service
 import org.springframework.web.socket.messaging.SessionDisconnectEvent
-
-@Configuration
-@ConfigurationProperties("custom.rabbitmq")
-data class RabbitMqConfig (
-    var username : String = "",
-    var password : String = "",
-    var virtualHost : String = "",
-    var host : String = "",
-    var port : String = ""
-) {
-    fun connectionFactory() : ConnectionFactory {
-        val cf = ConnectionFactory()
-        cf.username = username
-        cf.password = password
-        cf.virtualHost = virtualHost
-        cf.host = host
-        cf.port = port.toInt()
-        return cf
-    }
-}
 
 @Service
 class RabbitMqService (
@@ -70,7 +48,7 @@ class RabbitMqService (
 
     fun startUserSession(username : String, sessionID : String) {
         // Use username as consumer
-        val consumerID = channel.basicConsume(username, true, username,
+        val consumerID = channel.basicConsume(username, true,
             object : DefaultConsumer(channel) {
                 override fun handleDelivery(
                     consumerTag: String,
@@ -97,6 +75,10 @@ class RabbitMqService (
     }
 
     fun publish(msg: ChatMessage, exchange: String = "directMsg") {
+        // Server echo for direct messages to other users
+        if (exchange == "directMsg" && msg.receiver != msg.sender) {
+            channel.basicPublish(exchange, msg.sender, null, gson.toJson(msg).toByteArray())
+        }
         channel.basicPublish(exchange, msg.receiver, null, gson.toJson(msg).toByteArray())
     }
 
