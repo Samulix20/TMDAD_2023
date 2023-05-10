@@ -121,6 +121,7 @@ function startChat(event) {
     if(msgReceiver && stompClient) {
 
         let tg = msgReceiverType === 'group';
+        let ts = (new Date(Date.now())).toISOString();
 
         if(msgAttch.length > 0) {
             let attchUUID;
@@ -133,6 +134,7 @@ function startChat(event) {
                 content: attchUUID,
                 toGroup: tg,
                 receiver: msgReceiver,
+                timestamp: ts,
                 type: 'ATTACHMENT'
             }
         } else if (msgContent) {
@@ -140,6 +142,7 @@ function startChat(event) {
                 content: msgContent,
                 toGroup: tg,
                 receiver: msgReceiver,
+                timestamp: ts,
                 type: 'CHAT'
             }
         } else {
@@ -249,22 +252,34 @@ function onMessageReceived(payload) {
         usernameElement.appendChild(usernameText);
         messageElement.appendChild(usernameElement);
 
+        // Receiver print
         const receiverElement = document.createElement('span');
         receiverElement.setAttribute(
             "style", 
             "color: #777; font-weight: normal; font-style: italic;"
         );
-
         let t = ""
-
         // Direct msg
         if(message.receiver === username) {
             // pass
         }
         else t = " sent to " + message.receiver;
-
         receiverElement.appendChild(document.createTextNode(t));
         messageElement.appendChild(receiverElement);
+        
+        // Timestamp
+        const timestampElement = document.createElement('span');
+        timestampElement.setAttribute(
+            "style", 
+            "color: #777; font-weight: bold;"
+        );
+        let timestamp =  new Date(message.timestamp);
+        timestampElement.appendChild(document.createTextNode(
+            " " + timestamp.toLocaleTimeString() + 
+            " " + timestamp.toLocaleDateString()
+        ));
+        messageElement.appendChild(timestampElement);
+        
     }
 
     const textElement = document.createElement('p');

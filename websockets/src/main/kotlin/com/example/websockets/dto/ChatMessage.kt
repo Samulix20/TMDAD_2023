@@ -5,6 +5,7 @@ data class ChatMessage(
     var toGroup: Boolean? = null,
     var receiver: String,
     var content: String,
+    var timestamp: String,
     var type: MessageType
 )
 

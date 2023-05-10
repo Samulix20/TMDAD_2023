@@ -43,6 +43,7 @@ services:
 
   rabbitmq:
     image: rabbitmq:3-management
+    hostname: 'dev-rabbitmq'
     environment:
       RABBITMQ_DEFAULT_USER: tmdad
       RABBITMQ_DEFAULT_PASS: tmdad

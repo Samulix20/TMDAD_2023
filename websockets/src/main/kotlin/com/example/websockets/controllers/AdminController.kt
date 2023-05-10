@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
 import org.springframework.web.server.ResponseStatusException
 import java.security.Principal
+import java.time.Instant
 
 @RestController
 @RequestMapping("/admin")
@@ -27,7 +28,8 @@ class AdminController (
                     sender = principal.name,
                     receiver = "",
                     content = message.content!!,
-                    type = MessageType.CHAT
+                    type = MessageType.CHAT,
+                    timestamp = Instant.now().toString()
                 ), "adminMsg"
             )
         } catch (e: Exception) {

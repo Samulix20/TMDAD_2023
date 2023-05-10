@@ -70,8 +70,10 @@ class RabbitMqService (
 
     fun endSession(sessionID: String) {
         val consumerID = sessionCache[sessionID]
-        sessionCache.remove(sessionID)
-        channel.basicCancel(consumerID)
+        if (consumerID != null) {
+            sessionCache.remove(sessionID)
+            channel.basicCancel(consumerID)
+        }
     }
 
     fun publish(msg: ChatMessage, exchange: String = "directMsg") {
