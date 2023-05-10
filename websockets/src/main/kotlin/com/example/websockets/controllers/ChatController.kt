@@ -1,7 +1,7 @@
 package com.example.websockets.controllers
 
-import com.example.websockets.CustomMinioService
 import com.example.websockets.dto.*
+import com.example.websockets.services.CustomMinioService
 import com.example.websockets.services.RabbitMqService
 import org.springframework.messaging.handler.annotation.MessageMapping
 import org.springframework.messaging.handler.annotation.Payload
