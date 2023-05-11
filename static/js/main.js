@@ -23,6 +23,7 @@ const createGroupForm = document.querySelector('#createGroupForm');
 const addToGroupForm = document.querySelector('#addGroupForm');
 
 // Notification
+const notificationContainer = document.querySelector('#notifContainer');
 const notificationText = document.querySelector('#notif');
 
 // Cached files
@@ -197,9 +198,10 @@ function onError(error) {
 
 function onNotificationReceived(payload) {
     let notification = JSON.parse(payload.body);
-    notificationText.innerHTML = JSON.stringify(notification);
+    notificationContainer.style.color = '';
+    notificationContainer.style.backgroundColor = '';
 
-    if (notification.type == 'UPLOAD_FILE') {
+    if (notification.type === 'UPLOAD_FILE') {
         fetch(notification.url, {
             method: 'PUT',
             body: fileCache.get(notification.uuid)
@@ -207,7 +209,12 @@ function onNotificationReceived(payload) {
             console.log(e);
         });
         fileCache.delete(notification.uuid)
-    }
+    } else if (notification.type === 'ERROR') {
+        notificationContainer.style.color = 'red';
+        notificationContainer.style.backgroundColor = '#FFCCCB';
+    } 
+
+    notificationText.textContent = JSON.stringify(notification);
 }
 
 async function downloadFile(name) {
@@ -215,15 +222,17 @@ async function downloadFile(name) {
         mode: "cors",
         headers: {'Authorization': 'Bearer ' + jwtToken}
     });
-    const imageBlob = await image.blob();
-    const imageURL = URL.createObjectURL(imageBlob);
-    const anchor = document.createElement("a");
-    anchor.href = imageURL;
-    anchor.download = name;
-    document.body.appendChild(anchor);
-    anchor.click();
-    document.body.removeChild(anchor);
-    URL.revokeObjectURL(imageURL);
+    if (image.ok) {
+        const imageBlob = await image.blob();
+        const imageURL = URL.createObjectURL(imageBlob);
+        const anchor = document.createElement("a");
+        anchor.href = imageURL;
+        anchor.download = name;
+        document.body.appendChild(anchor);
+        anchor.click();
+        document.body.removeChild(anchor);
+        URL.revokeObjectURL(imageURL);
+    }
 }
 
 function onMessageReceived(payload) {

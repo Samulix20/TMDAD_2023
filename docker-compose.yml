@@ -25,6 +25,7 @@ services:
     restart: always
     ports:
       - 8080:80
+      - 9000:9000
     volumes:
       - ./gateway/nginx.conf:/etc/nginx/nginx.conf
       - ./static:/usr/share/nginx/html
@@ -33,7 +34,7 @@ services:
     image: minio/minio
     ports:
       - "9001:9001"
-      - "9000:9000"
+      - "9999:9000"
     volumes:
       - ./minio_data:/data
     environment:

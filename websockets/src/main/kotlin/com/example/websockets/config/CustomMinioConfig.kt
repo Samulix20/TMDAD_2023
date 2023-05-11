@@ -16,12 +16,14 @@ data class CustomMinioConfig (
     var endpoint: String = "",
     var port: String = ""
 ) {
-    var url = "http://${endpoint}:${port}"
+    fun url() : String {
+        return "http://${endpoint}:${port}"
+    }
 
     fun createMinioConfig(): MinioConfigurationProperties {
         val c = MinioConfigurationProperties()
         c.bucket = bucket
-        c.url = url
+        c.url = url()
         c.accessKey = accessKey
         c.secretKey = secretKey
         c.isSecure = false

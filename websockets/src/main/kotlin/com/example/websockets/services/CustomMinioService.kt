@@ -14,7 +14,7 @@ class CustomMinioService  (
     private val minioClient : MinioClient = config.createMinioClient()
 
     fun createPreSignedUrl(uuid: String): String {
-        return minioClient.getPresignedObjectUrl(
+        var url = minioClient.getPresignedObjectUrl(
             GetPresignedObjectUrlArgs.builder()
                 .method(io.minio.http.Method.PUT)
                 .bucket(config.bucket)
@@ -22,5 +22,6 @@ class CustomMinioService  (
                 .expiry(2, TimeUnit.HOURS)
                 .build()
         )
+        return "http://localhost:9000${url.removePrefix(config.url())}"
     }
 }
