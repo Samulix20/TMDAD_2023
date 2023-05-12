@@ -202,7 +202,7 @@ function onNotificationReceived(payload) {
     notificationContainer.style.backgroundColor = '';
 
     if (notification.type === 'UPLOAD_FILE') {
-        fetch(notification.url, {
+        fetch('/minio' + notification.url, {
             method: 'PUT',
             body: fileCache.get(notification.uuid)
         }).catch((e) => {

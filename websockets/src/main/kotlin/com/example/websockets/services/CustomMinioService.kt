@@ -22,6 +22,6 @@ class CustomMinioService  (
                 .expiry(2, TimeUnit.HOURS)
                 .build()
         )
-        return "http://localhost:9000${url.removePrefix(config.url())}"
+        return url.removePrefix(config.url())
     }
 }

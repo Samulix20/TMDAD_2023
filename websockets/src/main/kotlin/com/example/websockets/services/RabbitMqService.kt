@@ -4,6 +4,7 @@ import com.example.websockets.config.RabbitMqConfig
 import com.example.websockets.dto.ChatMessage
 import com.nimbusds.jose.shaded.gson.Gson
 import com.rabbitmq.client.AMQP
+import com.rabbitmq.client.Connection
 import com.rabbitmq.client.DefaultConsumer
 import com.rabbitmq.client.Envelope
 import org.springframework.context.event.EventListener
@@ -11,15 +12,27 @@ import org.springframework.messaging.simp.SimpMessageSendingOperations
 import org.springframework.stereotype.Component
 import org.springframework.stereotype.Service
 import org.springframework.web.socket.messaging.SessionDisconnectEvent
+import kotlin.concurrent.thread
 
 @Service
 class RabbitMqService (
     config: RabbitMqConfig,
     val socketMessageSender : SimpMessageSendingOperations
 ) {
-    val conn = config.connectionFactory().newConnection()
-    val channel = conn.createChannel()
     val gson = Gson()
+    private final fun <T> retry(call: () -> T): T {
+        while (true) {
+            try {
+                return call()
+            } catch (e: Exception) {
+                Thread.sleep(1000)
+                continue
+            }
+        }
+    }
+
+    val conn: Connection = retry { config.connectionFactory().newConnection() }
+    final val channel = retry { conn.createChannel() }!!
 
     // sessionID -> consumerID
     val sessionCache : HashMap<String, String> = HashMap()
