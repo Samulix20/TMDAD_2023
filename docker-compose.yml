@@ -53,3 +53,12 @@ services:
     ports:
       - "5672:5672"
       - "15672:15672"
+
+  chat-backend:
+    build: ./websockets/
+    image: tmdad_spring
+    environment:
+      CUSTOM_RABBITMQ_HOST: rabbitmq
+      CUSTOM_MINIO_ENDPOINT: minio
+      CUSTOM_MINIO_PORT: 9000
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db/tmdad_db
