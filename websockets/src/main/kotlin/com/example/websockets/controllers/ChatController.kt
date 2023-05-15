@@ -44,7 +44,7 @@ class ChatController (
             // If the receiver is a group set correct exchange
             if (chatMessage.toGroup!!) {
                 chatGroupRepository.findByName(chatMessage.receiver)!!
-                exchange = "groups/${chatMessage.receiver}"
+                exchange = "groups.${chatMessage.receiver}"
             }
             else chatUserRepository.findByUsername(chatMessage.receiver)!!
 

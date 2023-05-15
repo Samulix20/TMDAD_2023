@@ -2,7 +2,7 @@ package com.example.websockets.dto
 
 enum class NotificationType {
     ERROR, WRITE_FILE_ERROR,
-    GROUP_CREATED, ADDED_TO_GROUP, GROUP_LIST, UPLOAD_FILE
+    GENERIC, GROUP_LIST, UPLOAD_FILE
 }
 
 data class GenericNotification (

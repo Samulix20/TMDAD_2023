@@ -17,10 +17,8 @@ const connectingElement = document.querySelector('#connecting');
 // Form for starting chats
 const chatStartForm = document.querySelector('#chatStartForm');
 
-// Create group
-const createGroupForm = document.querySelector('#createGroupForm');
-// Add to group
-const addToGroupForm = document.querySelector('#addGroupForm');
+// Group operation from
+const groupOperationForm = document.querySelector('#groupOperationForm');
 
 // Notification
 const notificationContainer = document.querySelector('#notifContainer');
@@ -155,36 +153,51 @@ function startChat(event) {
     }
 }
 
-function createGroup(event) {
+function groupOperation(event) {
     event.preventDefault();
 
-    let gn = document.querySelector('#groupName').value.trim();
+    let targetGroup = document.querySelector('#targetGroup').value.trim();
+    let targetUser = document.querySelector('#targetUser').value.trim();
+    let opType = document.querySelector('#groupOpType').value;
 
-    if(gn && stompClient) {
-        let msg = {
-            target: gn
-        }
-        stompClient.send("/app/chat.createGroup", {}, JSON.stringify(msg));
+    switch(opType) {
+        case 'createGroup':
+            if(targetGroup) {
+                let msg = {
+                    target: targetGroup
+                }
+                stompClient.send("/app/chat.createGroup", {}, JSON.stringify(msg));
+            }
+            break;
+        case 'deleteGroup':
+            if(targetGroup) {
+                let msg = {
+                    target: targetGroup
+                }
+                stompClient.send("/app/chat.deleteGroup", {}, JSON.stringify(msg));
+            }
+            break;
+        case 'addToGroup':
+            if(targetGroup && targetUser) {
+                let msg = {
+                    target: targetGroup,
+                    name: targetUser
+                }
+                stompClient.send("/app/chat.addToGroup", {}, JSON.stringify(msg));
+            }
+            break;
+        case 'removeFromGroup':
+            if(targetGroup && targetUser) {
+                let msg = {
+                    target: targetGroup,
+                    name: targetUser
+                }
+                stompClient.send("/app/chat.removeFromGroup", {}, JSON.stringify(msg));
+            }
+            break;
     }
-    
-    createGroupForm.reset();
-}
 
-function addUserToGroup(event) {
-    event.preventDefault();
-
-    let group = document.querySelector('#groupAdd').value.trim();
-    let user = document.querySelector('#userAdd').value.trim();
-
-    if(group && user && stompClient) {
-        let msg = {
-            target: group,
-            name: user
-        }
-        stompClient.send("/app/chat.addToGroup", {}, JSON.stringify(msg));
-    }
-    
-    addToGroupForm.reset();
+    groupOperationForm.reset();
 }
 
 function onError(error) {
@@ -324,5 +337,4 @@ function getAvatarColor(messageSender) {
 
 usernameForm.addEventListener('submit', login, true);
 chatStartForm.addEventListener('submit', startChat, true);
-createGroupForm.addEventListener('submit', createGroup, true);
-addToGroupForm.addEventListener('submit', addUserToGroup, true)
+groupOperationForm.addEventListener('submit', groupOperation, true);

@@ -12,14 +12,21 @@ import org.springframework.messaging.simp.SimpMessageSendingOperations
 import org.springframework.stereotype.Component
 import org.springframework.stereotype.Service
 import org.springframework.web.socket.messaging.SessionDisconnectEvent
+import java.net.URI
+import java.net.URLEncoder
+import java.net.http.HttpClient
+import java.net.http.HttpRequest
+import java.net.http.HttpResponse
 import kotlin.concurrent.thread
 
 @Service
 class RabbitMqService (
-    config: RabbitMqConfig,
+    val config: RabbitMqConfig,
     val socketMessageSender : SimpMessageSendingOperations
 ) {
     val gson = Gson()
+    val httpClient = HttpClient.newBuilder().build();
+
     private final fun <T> retry(call: () -> T): T {
         while (true) {
             try {
@@ -51,12 +58,20 @@ class RabbitMqService (
     }
 
     fun createGroupExchange(groupName: String, username: String) {
-        channel.exchangeDeclare("groups/$groupName", "fanout", true)
+        channel.exchangeDeclare("groups.$groupName", "fanout", true)
         bindUserToGroup(groupName, username)
     }
 
+    fun deleteGroupExchange(groupName: String) {
+        channel.exchangeDelete("groups.$groupName")
+    }
+
     fun bindUserToGroup(groupName: String, username: String) {
-        channel.queueBind(username, "groups/$groupName", username)
+        channel.queueBind(username, "groups.$groupName", username)
+    }
+
+    fun unbindUserFromGroup(groupName: String, username: String) {
+        channel.queueUnbind(username, "groups.$groupName", username)
     }
 
     fun startUserSession(username : String, sessionID : String) {

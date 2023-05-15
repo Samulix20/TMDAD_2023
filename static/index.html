@@ -41,26 +41,23 @@
     </div>
 
     <div class="chat-container" style="height: auto;">
-        <form class="messageForm" id="createGroupForm" name="createGroupForm" nameForm="createGroupForm">
+        <form class="messageForm" id="groupOperationForm" name="groupOperationForm" nameForm="groupOperationForm">
             <div class="form-group">
                 <div class="input-group clearfix">
-                    <input autocomplete="off" class="form-control" id="groupName" placeholder="Group name..."
-                           type="text" style="width: 80%;"/>
-                    <button class="primary" type="submit" style="width: auto;">Create Group</button>
-                </div>
-            </div>
-        </form>
-    </div>
-
-    <div class="chat-container" style="height: auto;">
-        <form class="messageForm" id="addGroupForm" name="addGroupForm" nameForm="addGroupForm">
-            <div class="form-group">
-                <div class="input-group clearfix">
-                    <input autocomplete="off" class="form-control" id="userAdd" placeholder="User..."
+                    <input autocomplete="off" class="form-control" id="targetGroup" placeholder="Group..."
                            type="text" style="width: 46%; margin-right: 5px;"/>
-                    <input autocomplete="off" class="form-control" id="groupAdd" placeholder="Group..."
-                           type="text" style="width: calc(46% - 70px);"/>
-                    <button class="primary" type="submit">Add</button>
+                    <input autocomplete="off" class="form-control" id="targetUser" placeholder="User..."
+                           type="text" style="width: calc(46% - 70px); margin-right: 5px;"/>
+                    <select class="form-control" id="groupOpType" type="select" style="width: 17%">
+                        <option value="createGroup">Create</option>
+                        <option value="deleteGroup">Delete</option>
+                        <option value="addToGroup">Add</option>
+                        <option value="removeFromGroup">Remove</option>
+                    </select>
+
+                    <br>
+
+                    <button class="primary" type="submit" style="width: 98%; margin-top: 5px;">Send</button>
                 </div>
             </div>
         </form>
