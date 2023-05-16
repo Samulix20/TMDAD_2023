@@ -15,14 +15,17 @@ class ChatGroup (
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
     val id: Long = -1,
-    @ManyToMany(
-        fetch = FetchType.EAGER,
-        mappedBy = "groups"
-    )
-    var users: MutableSet<ChatUser> = mutableSetOf(),
-    @ManyToOne(fetch = FetchType.EAGER)
+    @ManyToOne
     @JoinColumn(name = "admin_id", nullable = false)
-    var admin: ChatUser = ChatUser()
+    var admin: ChatUser = ChatUser(),
+    @OneToMany(
+        mappedBy = "group",
+        fetch = FetchType.EAGER,
+        cascade = [CascadeType.ALL],
+        orphanRemoval = true
+    )
+    var messages: MutableList<GroupMessage> = mutableListOf<GroupMessage>()
+
 )
 @Repository
 interface ChatGroupRepository : CrudRepository<ChatGroup, Long> {

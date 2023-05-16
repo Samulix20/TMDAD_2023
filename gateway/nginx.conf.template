@@ -62,8 +62,14 @@ http {
         #
         # Static resources server
         #
+        
+        root   /usr/share/nginx/html;
+        
+        location /chatroom {
+            try_files $uri /index.html;
+        }
+
         location / {
-            root   /usr/share/nginx/html;
             index  index.html index.htm;
         }
     }

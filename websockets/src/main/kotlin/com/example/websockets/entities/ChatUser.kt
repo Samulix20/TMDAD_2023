@@ -18,14 +18,7 @@ class ChatUser(
     val role: String = "USER",
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
-    val id: Long = -1,
-    @ManyToMany(fetch = FetchType.EAGER)
-    @JoinTable(
-        name = "is_member",
-        joinColumns = [JoinColumn(name = "user_id")],
-        inverseJoinColumns = [JoinColumn(name = "group_id")]
-    )
-    var groups: MutableSet<ChatGroup> = mutableSetOf(),
+    val id: Long = -1
 )
 
 @Repository

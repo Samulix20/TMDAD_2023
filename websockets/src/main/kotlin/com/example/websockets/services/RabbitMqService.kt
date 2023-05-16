@@ -12,12 +12,6 @@ import org.springframework.messaging.simp.SimpMessageSendingOperations
 import org.springframework.stereotype.Component
 import org.springframework.stereotype.Service
 import org.springframework.web.socket.messaging.SessionDisconnectEvent
-import java.net.URI
-import java.net.URLEncoder
-import java.net.http.HttpClient
-import java.net.http.HttpRequest
-import java.net.http.HttpResponse
-import kotlin.concurrent.thread
 
 @Service
 class RabbitMqService (
@@ -25,7 +19,6 @@ class RabbitMqService (
     val socketMessageSender : SimpMessageSendingOperations
 ) {
     val gson = Gson()
-    val httpClient = HttpClient.newBuilder().build();
 
     private final fun <T> retry(call: () -> T): T {
         while (true) {
@@ -40,6 +33,7 @@ class RabbitMqService (
 
     val conn: Connection = retry { config.connectionFactory().newConnection() }
     final val channel = retry { conn.createChannel() }!!
+    final val httpClient = retry { config.httpClient() }
 
     // sessionID -> consumerID
     val sessionCache : HashMap<String, String> = HashMap()
@@ -112,6 +106,15 @@ class RabbitMqService (
         channel.basicPublish(exchange, msg.receiver, null, gson.toJson(msg).toByteArray())
     }
 
+    fun getQueueBindings(username: String) : List<String> {
+        val r = mutableListOf<String>()
+        httpClient.getQueueBindings(config.virtualHost, username).forEach {
+            if (it.source != "directMsg" && it.source != "adminMsg" && it.source != "") {
+                r.add(it.source.removePrefix("groups."))
+            }
+        }
+        return r
+    }
 }
 
 @Component

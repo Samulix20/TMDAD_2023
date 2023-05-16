@@ -1,12 +1,8 @@
 package com.example.websockets.controllers
 
 import com.example.websockets.dto.*
-import com.example.websockets.entities.ChatGroup
-import com.example.websockets.entities.ChatGroupRepository
-import com.example.websockets.entities.ChatUser
-import com.example.websockets.entities.ChatUserRepository
+import com.example.websockets.entities.*
 import com.example.websockets.services.RabbitMqService
-import jakarta.persistence.EntityManager
 import jakarta.transaction.Transactional
 import org.springframework.data.repository.findByIdOrNull
 import org.springframework.messaging.handler.annotation.MessageMapping
@@ -19,11 +15,11 @@ import java.security.Principal
 @Transactional
 @Controller
 class GroupController (
-    val em: EntityManager,
     val messageSender: SimpMessageSendingOperations,
     val chatGroupRepository: ChatGroupRepository,
     val chatUserRepository: ChatUserRepository,
-    val rabbitService: RabbitMqService,
+    val groupMessageRepository: GroupMessageRepository,
+    val rabbitService: RabbitMqService
 ) {
     fun getRequestUser(principal: Principal) : ChatUser {
         return chatUserRepository.findByIdOrNull(SecurityContextHolder.getContext().authentication.details as Long)!!
@@ -36,45 +32,55 @@ class GroupController (
     @MessageMapping("/chat.createGroup")
     fun createGroup(@Payload message: GroupOperationMessage,
                     principal: Principal) {
-
         val user = getRequestUser(principal)
         val group = ChatGroup(name = message.target!!, admin = user)
+
+        // Save group un DB
         chatGroupRepository.save(group)
         // Create group in rabbit
         rabbitService.createGroupExchange(group.name, user.username)
+
         messageSender.convertAndSend(
             "/topic/system/notifications/${user.username}",
-            GenericNotification(NotificationType.GENERIC,
-                "${message.target} created")
+            GenericNotification(
+                NotificationType.GENERIC,
+                "${message.target} created"
+            )
         )
     }
 
     @MessageMapping("/chat.deleteGroup")
     fun deleteGroup(@Payload message: GroupOperationMessage,
                     principal: Principal) {
-
         val user = getRequestUser(principal)
         val group = chatGroupRepository.findByName(message.target!!)!!
         adminCheck(user, group)
+
+        // Remove group in DB
         chatGroupRepository.delete(group)
+        // Delete from rabbit
         rabbitService.deleteGroupExchange(group.name)
+
         messageSender.convertAndSend(
             "/topic/system/notifications/${user.username}",
-            GenericNotification(NotificationType.GENERIC,
-                "${message.target} deleted")
+            GenericNotification(
+                NotificationType.GENERIC,
+                "${message.target} deleted"
+            )
         )
     }
 
     @MessageMapping("/chat.addToGroup")
     fun addToGroup(@Payload message: GroupOperationMessage,
                    principal: Principal) {
-
         val admin = getRequestUser(principal)
         val group = chatGroupRepository.findByName(message.target)!!
         adminCheck(admin, group)
         val user = chatUserRepository.findByUsername(message.name)!!
-        user.groups.add(group)
-        em.persist(user)
+
+        // Don't add admin to group
+        if (user.id == admin.id) return
+
         // Bind user to group in rabbit
         rabbitService.bindUserToGroup(group.name, user.username)
 
@@ -86,7 +92,7 @@ class GroupController (
             )
         )
         messageSender.convertAndSend(
-            "/topic/system/notifications/${user.username}",
+            "/topic/system/notifications/${admin.username}",
             GenericNotification(
                 NotificationType.GENERIC,
                 "${user.username} added to group ${group.name}"
@@ -100,38 +106,42 @@ class GroupController (
         val admin = getRequestUser(principal)
         val group = chatGroupRepository.findByName(message.target)!!
         adminCheck(admin, group)
+        val user = chatUserRepository.findByUsername(message.name)!!
 
-        val removed = group.users.removeIf{ it.username == message.name!! }
-        if(removed) {
-            // Save change in database
-            em.persist(group)
+        // Don't remove admin
+        if (user.id == admin.id) return
+
+        val bindings = rabbitService.getQueueBindings(user.username)
+        if(bindings.contains(group.name)) {
             // Remove binding from rabbit
-            rabbitService.unbindUserFromGroup(group.name, message.name!!)
+            rabbitService.unbindUserFromGroup(group.name, user.username)
         }
 
+        messageSender.convertAndSend(
+            "/topic/system/notifications/${user.username}",
+            GenericNotification(
+                NotificationType.GENERIC,
+                "Removed from group ${group.name}"
+            )
+        )
         messageSender.convertAndSend(
             "/topic/system/notifications/${admin.username}",
             GenericNotification(
                 NotificationType.GENERIC,
-                "$removed"
+                "${user.username} removed from ${group.name}"
             )
         )
     }
 
     @MessageMapping("/chat.getGroups")
     fun getGroups(principal: Principal) {
-
         val user = getRequestUser(principal)
-        val groupNameList = mutableListOf<String>()
-        user.groups.forEach { g ->
-            groupNameList.add(g.name)
-        }
-        chatGroupRepository.findByAdmin(user).forEach { g ->
-            groupNameList.add(g.name)
-        }
         messageSender.convertAndSend(
             "/topic/system/notifications/${user.username}",
-            GroupListNotification(NotificationType.GROUP_LIST, groupNameList)
+            GroupListNotification(
+                NotificationType.GROUP_LIST,
+                rabbitService.getQueueBindings(user.username)
+            )
         )
     }
 }

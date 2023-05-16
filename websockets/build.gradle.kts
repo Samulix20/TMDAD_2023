@@ -26,6 +26,8 @@ dependencies {
 	implementation("com.jlefebure:spring-boot-starter-minio:1.10")
 	implementation("io.minio:minio:8.5.2")
 	implementation("com.rabbitmq:amqp-client:5.17.0")
+	implementation("com.rabbitmq:http-client:5.0.0")
+	implementation("com.fasterxml.jackson.core:jackson-databind:2.14.2")
 	runtimeOnly("org.postgresql:postgresql")
 	testImplementation("org.springframework.boot:spring-boot-starter-test")
 }

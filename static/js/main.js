@@ -24,17 +24,29 @@ const groupOperationForm = document.querySelector('#groupOperationForm');
 const notificationContainer = document.querySelector('#notifContainer');
 const notificationText = document.querySelector('#notif');
 
+// Logout form
+const logoutForm = document.querySelector('#logoutForm');
+
 // Cached files
 const fileCache = new Map();
 
 let stompClient = null;
-let username = null;
-let jwtToken = null;
 
 const colors = [
     '#2196F3', '#32c787', '#00BCD4', '#ff5652',
     '#ffc107', '#ff85af', '#FF9800', '#39bbb0'
 ];
+
+let username = window.localStorage.getItem("username");
+let jwtToken = window.localStorage.getItem("jwt");
+if(username && jwtToken) {
+    fetch('/api/users/secured', {
+        headers: {'Authorization': 'Bearer ' + jwtToken}
+    })
+    .then((r) => {
+        if(r.ok) startChatPage();
+    });
+}
 
 function loginError(e, info) {
     if(e) console.log(e);
@@ -44,22 +56,31 @@ function loginError(e, info) {
     loginInfoElement.classList.remove('hidden');
 }
 
-function login(event) {
+function startChatPage() {
+    inboxName.innerHTML = username + "'s Inbox"
+    usernamePage.classList.add('hidden');
+    chatPage.classList.remove('hidden');
+    const socket = new SockJS('/api/websocket');
+    stompClient = Stomp.over(socket);
+    var stompHeaders = {};
+    stompHeaders['token'] = jwtToken;
+    stompClient.connect(stompHeaders, onConnected, onError);
+}
 
+function login(event) {
     username = document.querySelector('#name').value.trim();
     let password = document.querySelector('#password').value.trim();
     event.preventDefault();
 
     if(username && password) {
-
         let jsonRequestBody = JSON.stringify({
             username: username,
             password: password,
         });
-
+    
         let endpoint = null
         let errStr = null
-
+    
         if (event.submitter.id == 'register') {
             endpoint = '/api/users/register'
             errStr = 'Register'
@@ -80,14 +101,9 @@ function login(event) {
         .then(x => x.json())
         .then(data => {
             jwtToken = data.token;
-            inboxName.innerHTML = username + "'s Inbox"
-            usernamePage.classList.add('hidden');
-            chatPage.classList.remove('hidden');
-            const socket = new SockJS('/api/websocket');
-            stompClient = Stomp.over(socket);
-            var stompHeaders = {};
-            stompHeaders['token'] = jwtToken;
-            stompClient.connect(stompHeaders, onConnected, onError);
+            window.localStorage.setItem("jwt", jwtToken);
+            window.localStorage.setItem("username", username);
+            startChatPage();
         }).catch (e => {
             loginError(e, errStr + " error");
         });
@@ -96,6 +112,15 @@ function login(event) {
     }
 
     usernameForm.reset();
+}
+
+function logout(event) {
+    event.preventDefault();
+    window.localStorage.removeItem("username");
+    window.localStorage.removeItem("jwt");
+    username = null;
+    jwtToken = null;
+    window.location.reload();
 }
 
 async function onConnected() {
@@ -248,9 +273,7 @@ async function downloadFile(name) {
     }
 }
 
-function onMessageReceived(payload) {
-    const message = JSON.parse(payload.body);
-
+function displayChatMessage(message) {
     const messageElement = document.createElement('li');
 
     if(message.type === 'JOIN') {
@@ -325,6 +348,10 @@ function onMessageReceived(payload) {
     messageArea.scrollTop = messageArea.scrollHeight;
 }
 
+function onMessageReceived(payload) {
+    displayChatMessage(JSON.parse(payload.body));
+}
+
 function getAvatarColor(messageSender) {
     let hash = 0;
     for (let i = 0; i < messageSender.length; i++) {
@@ -338,3 +365,4 @@ function getAvatarColor(messageSender) {
 usernameForm.addEventListener('submit', login, true);
 chatStartForm.addEventListener('submit', startChat, true);
 groupOperationForm.addEventListener('submit', groupOperation, true);
+logoutForm.addEventListener('submit', logout, true);
