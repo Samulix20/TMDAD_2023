@@ -3,6 +3,7 @@ package com.example.websockets.controllers
 import com.example.websockets.dto.*
 import com.example.websockets.entities.*
 import com.example.websockets.services.RabbitMqService
+import com.nimbusds.jose.shaded.gson.Gson
 import jakarta.transaction.Transactional
 import org.springframework.data.repository.findByIdOrNull
 import org.springframework.messaging.handler.annotation.MessageMapping
@@ -21,15 +22,21 @@ class GroupController (
     val groupMessageRepository: GroupMessageRepository,
     val rabbitService: RabbitMqService
 ) {
+    val gson = Gson()
+
     fun getRequestUser(principal: Principal) : ChatUser {
         return chatUserRepository.findByIdOrNull(SecurityContextHolder.getContext().authentication.details as Long)!!
+    }
+
+    fun getRequestGroup(message: GroupOperationMessage) : ChatGroup {
+        return chatGroupRepository.findByName(message.target!!)!!
     }
 
     fun adminCheck(user: ChatUser, group: ChatGroup) {
         if(user.id != group.admin.id) throw Exception("Sender is not group admin")
     }
 
-    @MessageMapping("/chat.createGroup")
+    @MessageMapping("/group.create")
     fun createGroup(@Payload message: GroupOperationMessage,
                     principal: Principal) {
         val user = getRequestUser(principal)
@@ -49,11 +56,11 @@ class GroupController (
         )
     }
 
-    @MessageMapping("/chat.deleteGroup")
+    @MessageMapping("/group.delete")
     fun deleteGroup(@Payload message: GroupOperationMessage,
                     principal: Principal) {
         val user = getRequestUser(principal)
-        val group = chatGroupRepository.findByName(message.target!!)!!
+        val group = getRequestGroup(message)
         adminCheck(user, group)
 
         // Remove group in DB
@@ -70,11 +77,11 @@ class GroupController (
         )
     }
 
-    @MessageMapping("/chat.addToGroup")
+    @MessageMapping("/group.addUser")
     fun addToGroup(@Payload message: GroupOperationMessage,
                    principal: Principal) {
         val admin = getRequestUser(principal)
-        val group = chatGroupRepository.findByName(message.target)!!
+        val group = getRequestGroup(message)
         adminCheck(admin, group)
         val user = chatUserRepository.findByUsername(message.name)!!
 
@@ -100,11 +107,11 @@ class GroupController (
         )
     }
 
-    @MessageMapping("/chat.removeFromGroup")
+    @MessageMapping("/group.removeUser")
     fun removeFromGroup(@Payload message: GroupOperationMessage,
                         principal: Principal) {
         val admin = getRequestUser(principal)
-        val group = chatGroupRepository.findByName(message.target)!!
+        val group = getRequestGroup(message)
         adminCheck(admin, group)
         val user = chatUserRepository.findByUsername(message.name)!!
 
@@ -133,7 +140,40 @@ class GroupController (
         )
     }
 
-    @MessageMapping("/chat.getGroups")
+    @MessageMapping("/group.messages")
+    fun getMessages(@Payload message: GroupOperationMessage,
+                    principal: Principal) {
+
+        val user = getRequestUser(principal)
+        val group = getRequestGroup(message)
+        val bindings = rabbitService.getQueueBindings(user.username)
+
+        if(!bindings.contains(group.name)) {
+            messageSender.convertAndSend(
+                "/topic/system/notifications/${user.username}",
+                GenericNotification(
+                    NotificationType.ERROR,
+                    "Not member of group ${group.name}"
+                )
+            )
+            return
+        }
+
+        val msgList = mutableListOf<ChatMessage>()
+        groupMessageRepository.findByGroup(group).forEach {
+            msgList.add(gson.fromJson(it.content, ChatMessage::class.java))
+        }
+
+        messageSender.convertAndSend(
+            "/topic/system/notifications/${user.username}",
+            GroupMessageListNotification(
+                NotificationType.MESSAGE_LIST,
+                msgList
+            )
+        )
+    }
+
+    @MessageMapping("/group.list")
     fun getGroups(principal: Principal) {
         val user = getRequestUser(principal)
         messageSender.convertAndSend(

@@ -1,6 +1,7 @@
 package com.example.websockets.entities
 
 import jakarta.persistence.*
+import org.springframework.data.jpa.repository.Query
 import org.springframework.data.repository.CrudRepository
 import org.springframework.stereotype.Repository
 
@@ -19,4 +20,6 @@ class GroupMessage (
 )
 
 @Repository
-interface GroupMessageRepository : CrudRepository<GroupMessage, Long>
+interface GroupMessageRepository : CrudRepository<GroupMessage, Long> {
+    fun findByGroup(group: ChatGroup): List<GroupMessage>
+}

@@ -65,7 +65,7 @@ http {
         
         root   /usr/share/nginx/html;
         
-        location /chatroom {
+        location /rooms {
             try_files $uri /index.html;
         }
 

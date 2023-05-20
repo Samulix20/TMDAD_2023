@@ -37,6 +37,7 @@ const colors = [
     '#ffc107', '#ff85af', '#FF9800', '#39bbb0'
 ];
 
+// Auto login
 let username = window.localStorage.getItem("username");
 let jwtToken = window.localStorage.getItem("jwt");
 if(username && jwtToken) {
@@ -44,8 +45,22 @@ if(username && jwtToken) {
         headers: {'Authorization': 'Bearer ' + jwtToken}
     })
     .then((r) => {
-        if(r.ok) startChatPage();
+        if(r.ok) {
+            startChatPage();
+        }
     });
+}
+
+function roomMessageFetch() {
+    // Auto group message fetch
+    let roomRE = new RegExp("/rooms/(.*)");
+    let REeval = roomRE.exec(window.location.pathname);
+    if(REeval === null) return;
+
+    let msg = {
+        target: REeval[1]
+    }
+    stompClient.send("/app/group.messages", {}, JSON.stringify(msg));
 }
 
 function loginError(e, info) {
@@ -129,8 +144,8 @@ async function onConnected() {
     // Subscribe to the system personal notifications topic
     await stompClient.subscribe('/topic/system/notifications/' + username, onNotificationReceived);
     connectingElement.classList.add('hidden');
-    stompClient.send("/app/chat.start", {}, "")
-    stompClient.send("/app/chat.getGroups", {}, "")
+    stompClient.send("/app/chat.start", {}, "");
+    roomMessageFetch();
 }
 
 function startChat(event) {
@@ -191,7 +206,7 @@ function groupOperation(event) {
                 let msg = {
                     target: targetGroup
                 }
-                stompClient.send("/app/chat.createGroup", {}, JSON.stringify(msg));
+                stompClient.send("/app/group.create", {}, JSON.stringify(msg));
             }
             break;
         case 'deleteGroup':
@@ -199,7 +214,7 @@ function groupOperation(event) {
                 let msg = {
                     target: targetGroup
                 }
-                stompClient.send("/app/chat.deleteGroup", {}, JSON.stringify(msg));
+                stompClient.send("/app/group.delete", {}, JSON.stringify(msg));
             }
             break;
         case 'addToGroup':
@@ -208,7 +223,7 @@ function groupOperation(event) {
                     target: targetGroup,
                     name: targetUser
                 }
-                stompClient.send("/app/chat.addToGroup", {}, JSON.stringify(msg));
+                stompClient.send("/app/group.addUser", {}, JSON.stringify(msg));
             }
             break;
         case 'removeFromGroup':
@@ -217,7 +232,7 @@ function groupOperation(event) {
                     target: targetGroup,
                     name: targetUser
                 }
-                stompClient.send("/app/chat.removeFromGroup", {}, JSON.stringify(msg));
+                stompClient.send("/app/group.removeUser", {}, JSON.stringify(msg));
             }
             break;
     }
@@ -246,7 +261,15 @@ function onNotificationReceived(payload) {
         }).catch((e) => {
             console.log(e);
         });
-        fileCache.delete(notification.uuid)
+        fileCache.delete(notification.uuid);
+        return;
+    } else if (notification.type === 'MESSAGE_LIST') {
+        notification.messages.forEach(
+            m => {
+                displayChatMessage(m);
+            }
+        );
+        return;
     } else if (notification.type === 'ERROR') {
         notificationContainer.style.color = 'red';
         notificationContainer.style.backgroundColor = '#FFCCCB';
