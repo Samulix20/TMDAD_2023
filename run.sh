@@ -7,7 +7,7 @@ mkdir -p rabbit_data
 
 # Gradle build
 cd websockets
-./gradlew clean build -x test
+./gradlew clean build -x test || exit 1
 cd ..
 
 # Launch clean docker

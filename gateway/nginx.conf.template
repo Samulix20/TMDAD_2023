@@ -53,6 +53,7 @@ http {
             proxy_set_header Connection "";
             chunked_transfer_encoding off;
 
+            client_max_body_size 20M;
             
             rewrite ^/minio(.*)$ $1 break;
 

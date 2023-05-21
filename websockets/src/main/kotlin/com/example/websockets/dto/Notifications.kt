@@ -2,7 +2,7 @@ package com.example.websockets.dto
 
 enum class NotificationType {
     ERROR, WRITE_FILE_ERROR,
-    GENERIC, GROUP_LIST, UPLOAD_FILE, MESSAGE_LIST
+    GENERIC, GROUP_LIST, UPLOAD_FILE, MESSAGE_LIST, TREND_LIST
 }
 
 data class GenericNotification (
@@ -24,4 +24,9 @@ data class UploadFileNotification (
     var type: NotificationType,
     var url: String,
     var uuid: String
+)
+
+data class TrendsNotification (
+    var type: NotificationType,
+    var trends: List<Pair<String, Int>>
 )

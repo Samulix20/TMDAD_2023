@@ -30,6 +30,7 @@ const logoutForm = document.querySelector('#logoutForm');
 // Cached files
 const fileCache = new Map();
 
+let shownUUID = []
 let stompClient = null;
 
 const colors = [
@@ -143,6 +144,8 @@ async function onConnected() {
     await stompClient.subscribe('/topic/chat/' + username, onMessageReceived);
     // Subscribe to the system personal notifications topic
     await stompClient.subscribe('/topic/system/notifications/' + username, onNotificationReceived);
+    // Subscribe to the system trends
+    await stompClient.subscribe('/topic/system/trends', onNotificationReceived);
     connectingElement.classList.add('hidden');
     stompClient.send("/app/chat.start", {}, "");
     roomMessageFetch();
@@ -157,6 +160,8 @@ function startChat(event) {
     let msgReceiverType = document.querySelector('#sendRcvType').value;
     let msg;
 
+    var msgUUID = crypto.randomUUID()
+
     if(msgReceiver && stompClient) {
 
         let tg = msgReceiverType === 'group';
@@ -165,11 +170,19 @@ function startChat(event) {
         if(msgAttch.length > 0) {
             let attchUUID;
             for (var i = 0; i < msgAttch.length; i++) {
+                
+                // 20 MB Limit
+                if(msgAttch[i].size > 20971520) {
+                    console.error("SIZE TOO BIG");
+                    return;
+                }
+
                 // Add file type extension to directly download using the attchUUID
                 attchUUID = crypto.randomUUID() + '.' + msgAttch[i].name.split('.').pop()
                 fileCache.set(attchUUID, msgAttch[i]);
             }
             msg = {
+                uuid: msgUUID,
                 content: attchUUID,
                 toGroup: tg,
                 receiver: msgReceiver,
@@ -178,6 +191,7 @@ function startChat(event) {
             }
         } else if (msgContent) {
             msg = {
+                uuid: msgUUID,
                 content: msgContent,
                 toGroup: tg,
                 receiver: msgReceiver,
@@ -297,6 +311,9 @@ async function downloadFile(name) {
 }
 
 function displayChatMessage(message) {
+    if(shownUUID.includes(message.uuid)) return;
+    else shownUUID.push(message.uuid);
+
     const messageElement = document.createElement('li');
 
     if(message.type === 'JOIN') {

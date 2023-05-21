@@ -6,6 +6,7 @@ data class ChatMessage(
     var receiver: String,
     var content: String,
     var timestamp: String,
+    var uuid: String,
     var type: MessageType
 )
 

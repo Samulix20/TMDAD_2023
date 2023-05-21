@@ -4,6 +4,7 @@ import com.example.websockets.dto.*
 import com.example.websockets.entities.*
 import com.example.websockets.services.CustomMinioService
 import com.example.websockets.services.RabbitMqService
+import com.example.websockets.services.TrendService
 import com.nimbusds.jose.shaded.gson.Gson
 import org.springframework.data.repository.findByIdOrNull
 import org.springframework.messaging.handler.annotation.MessageMapping
@@ -20,6 +21,7 @@ import java.time.LocalDateTime
 class ChatController (
     val messageSender: SimpMessageSendingOperations,
     val customMinioService: CustomMinioService,
+    val trendService: TrendService,
     val rabbitService: RabbitMqService,
     val chatGroupRepository: ChatGroupRepository,
     val chatUserRepository: ChatUserRepository,
@@ -45,6 +47,8 @@ class ChatController (
              principal: Principal) {
 
         try {
+            if(chatMessage.content.length > 500) throw Exception("Message too long")
+
             // Which exchange is the message going to be published in
             // Defaults to direct msg
             var exchange = "directMsg"
@@ -83,7 +87,8 @@ class ChatController (
                     )
                 )
             }
-
+            // Store words
+            trendService.addMessage(chatMessage)
             // Publish message
             rabbitService.publish(chatMessage, exchange)
         } catch (e : NullPointerException) {
