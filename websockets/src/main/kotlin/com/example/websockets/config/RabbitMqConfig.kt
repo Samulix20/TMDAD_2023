@@ -14,7 +14,8 @@ data class RabbitMqConfig (
     var virtualHost : String = "",
     var host : String = "",
     var port : String = "",
-    var managementPort : String = ""
+    var managementPort : String = "",
+    var useSSL : String = ""
 ) {
     fun connectionFactory() : ConnectionFactory {
         val cf = ConnectionFactory()
@@ -23,6 +24,7 @@ data class RabbitMqConfig (
         cf.virtualHost = virtualHost
         cf.host = host
         cf.port = port.toInt()
+        if(useSSL.toBooleanStrict()) cf.useSslProtocol()
         return cf
     }
 

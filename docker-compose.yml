@@ -1,6 +1,15 @@
 version: '3.9'
 name: tmdad
 services:
+
+  adminer:
+    image: adminer
+    restart: always
+    ports:
+      - 8080:8080
+    profiles:
+      - local
+
   db:
     image: postgres
     restart: always
@@ -11,15 +20,34 @@ services:
     volumes:
       - ./database/init-user-db.sh:/docker-entrypoint-initdb.d/init-user-db.sh
       - ./database/data:/var/lib/postgresql/data
+    profiles:
+      - local
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    restart: always
+    hostname: 'dev-rabbitmq'
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_DEFAULT_USER}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_DEFAULT_PASS}
+    volumes:
+      - ./rabbit_data:/var/lib/rabbitmq/mnesia/
+    ports:
+      - "15672:15672"
+    profiles:
+      - local
   
   gateway:
     image: nginx
     restart: always
     ports:
       - 80:80
+      - 443:443
     volumes:
       - ./gateway/nginx.conf.template:/etc/nginx/nginx.conf.template
       - ./static:/usr/share/nginx/html
+      - ./gateway/server.crt:/server.crt
+      - ./gateway/server.key:/server.key
     environment:
       BACKEND_SERVER: ${BACKEND_SERVER}
       BACKEND_PORT: ${BACKEND_PORT}
@@ -39,18 +67,6 @@ services:
       MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
     command: server --console-address ":9001" /data
 
-  rabbitmq:
-    image: rabbitmq:3-management
-    restart: always
-    hostname: 'dev-rabbitmq'
-    environment:
-      RABBITMQ_DEFAULT_USER: ${RABBITMQ_DEFAULT_USER}
-      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_DEFAULT_PASS}
-    volumes:
-      - ./rabbit_data:/var/lib/rabbitmq/mnesia/
-    ports:
-      - "15672:15672"
-
   chat-backend:
     image: eclipse-temurin:17-jdk-alpine
     restart: always
@@ -63,17 +79,16 @@ services:
       - rabbitmq
     environment:
       CUSTOM_RABBITMQ_HOST: ${RABBITMQ_HOST}
+      CUSTOM_RABBITMQ_PORT: ${RABBITMQ_PORT}
+      CUSTOM_RABBITMQ_VIRTUALHOST: ${RABBITMQ_VHOST}
+      CUSTOM_RABBITMQ_USESSL: ${RABBITMQ_SSL}
+      CUSTOM_RABBITMQ_USERNAME: ${RABBITMQ_DEFAULT_USER}
+      CUSTOM_RABBITMQ_PASSWORD: ${RABBITMQ_DEFAULT_PASS}
       CUSTOM_MINIO_ENDPOINT: ${MINIO_SERVER}
       CUSTOM_MINIO_PORT: ${MINIO_PORT}
       CUSTOM_MINIO_ACCESSKEY: ${MINIO_ROOT_USER}
       CUSTOM_MINIO_SECRETKEY: ${MINIO_ROOT_PASSWORD}
-      SPRING_DATASOURCE_URL: jdbc:postgresql://db/${DATABASE_NAME}
+      SPRING_DATASOURCE_URL: ${POSTGRES_URL}
       SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER}
       SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD}
     command: ["/bin/sh", "run.sh"]
-
-  adminer:
-    image: adminer
-    restart: always
-    ports:
-      - 8080:8080

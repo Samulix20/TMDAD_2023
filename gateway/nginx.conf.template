@@ -20,7 +20,22 @@ http {
     access_log  /var/log/nginx/access.log  main;
 
     server {
-        listen       80;
+        #
+        # Redirect HTTP to HTTPS
+        #
+
+        listen      80;
+        return      https://$host$request_uri;
+    }
+
+    server {
+        #
+        # HTTPS config
+        #
+        
+        listen 443 ssl;
+        ssl_certificate /server.crt;
+        ssl_certificate_key /server.key;
 
         #
         # Backend api gateway
