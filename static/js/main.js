@@ -267,6 +267,7 @@ function onNotificationReceived(payload) {
     let notification = JSON.parse(payload.body);
     notificationContainer.style.color = '';
     notificationContainer.style.backgroundColor = '';
+    notificationText.textContent = '';
 
     if (notification.type === 'UPLOAD_FILE') {
         fetch('/minio' + notification.url, {
@@ -276,20 +277,29 @@ function onNotificationReceived(payload) {
             console.log(e);
         });
         fileCache.delete(notification.uuid);
-        return;
     } else if (notification.type === 'MESSAGE_LIST') {
         notification.messages.forEach(
             m => {
                 displayChatMessage(m);
             }
         );
-        return;
+    } else if (notification.type === 'TREND_LIST') {
+        let printmsg = "TRENDING: ";
+        let c = 0;
+        notification.trends.forEach(
+            t => {
+                printmsg = printmsg + t.first + ' | ';
+                c = c + 1;
+            }
+        );
+        if(c > 0) notificationText.textContent = printmsg.substring(0, printmsg.length - 3);
     } else if (notification.type === 'ERROR') {
         notificationContainer.style.color = 'red';
         notificationContainer.style.backgroundColor = '#FFCCCB';
-    } 
-
-    notificationText.textContent = JSON.stringify(notification);
+        notificationText.textContent = notification.info;
+    } else {
+        notificationText.textContent = notification.info;
+    }
 }
 
 async function downloadFile(name) {
