@@ -36,141 +36,170 @@ class GroupController (
         if(user.id != group.admin.id) throw Exception("Sender is not group admin")
     }
 
+    fun catchAndNotifyError (user: ChatUser, errorInfo: String, call: () -> Unit, ) {
+        try {
+            call()
+        } catch (e : Exception) {
+            messageSender.convertAndSend(
+                "/topic/system/notifications/${user.username}",
+                GenericNotification(NotificationType.ERROR, errorInfo)
+            )
+        }
+    }
+
     @MessageMapping("/group.create")
     fun createGroup(@Payload message: GroupOperationMessage,
                     principal: Principal) {
         val user = getRequestUser(principal)
-        val group = ChatGroup(name = message.target!!, admin = user)
 
-        // Save group un DB
-        chatGroupRepository.save(group)
-        // Create group in rabbit
-        rabbitService.createGroupExchange(group.name, user.username)
+        catchAndNotifyError(user, "Could not create group") {
+            if(chatGroupRepository.findByName(message.target!!) != null) {
+                throw Exception("Duplicate")
+            }
 
-        messageSender.convertAndSend(
-            "/topic/system/notifications/${user.username}",
-            GenericNotification(
-                NotificationType.GENERIC,
-                "${message.target} created"
+            val group = ChatGroup(name = message.target!!, admin = user)
+
+            // Save group un DB
+            chatGroupRepository.save(group)
+            // Create group in rabbit
+            rabbitService.createGroupExchange(group.name, user.username)
+
+            messageSender.convertAndSend(
+                "/topic/system/notifications/${user.username}",
+                GenericNotification(
+                    NotificationType.GENERIC,
+                    "${message.target} created"
+                )
             )
-        )
+        }
     }
 
     @MessageMapping("/group.delete")
     fun deleteGroup(@Payload message: GroupOperationMessage,
                     principal: Principal) {
         val user = getRequestUser(principal)
-        val group = getRequestGroup(message)
-        adminCheck(user, group)
 
-        // Remove group in DB
-        chatGroupRepository.delete(group)
-        // Delete from rabbit
-        rabbitService.deleteGroupExchange(group.name)
+        catchAndNotifyError(user, "Could not delete group") {
+            val group = getRequestGroup(message)
+            adminCheck(user, group)
 
-        messageSender.convertAndSend(
-            "/topic/system/notifications/${user.username}",
-            GenericNotification(
-                NotificationType.GENERIC,
-                "${message.target} deleted"
+            // Remove group in DB
+            chatGroupRepository.delete(group)
+            // Delete from rabbit
+            rabbitService.deleteGroupExchange(group.name)
+
+            messageSender.convertAndSend(
+                "/topic/system/notifications/${user.username}",
+                GenericNotification(
+                    NotificationType.GENERIC,
+                    "${message.target} deleted"
+                )
             )
-        )
+        }
     }
 
     @MessageMapping("/group.addUser")
     fun addToGroup(@Payload message: GroupOperationMessage,
                    principal: Principal) {
         val admin = getRequestUser(principal)
-        val group = getRequestGroup(message)
-        adminCheck(admin, group)
-        val user = chatUserRepository.findByUsername(message.name)!!
 
-        // Don't add admin to group
-        if (user.id == admin.id) return
+        catchAndNotifyError(admin, "Could not add user") {
+            val group = getRequestGroup(message)
+            adminCheck(admin, group)
+            val user = chatUserRepository.findByUsername(message.name)!!
 
-        // Bind user to group in rabbit
-        rabbitService.bindUserToGroup(group.name, user.username)
+            // Don't add admin to group
+            if (user.id == admin.id) throw Exception("Admin")
 
-        messageSender.convertAndSend(
-            "/topic/system/notifications/${user.username}",
-            GenericNotification(
-                NotificationType.GENERIC,
-                "Added to group ${group.name}"
+            // Bind user to group in rabbit
+            rabbitService.bindUserToGroup(group.name, user.username)
+
+            messageSender.convertAndSend(
+                "/topic/system/notifications/${user.username}",
+                GenericNotification(
+                    NotificationType.GENERIC,
+                    "Added to group ${group.name}"
+                )
             )
-        )
-        messageSender.convertAndSend(
-            "/topic/system/notifications/${admin.username}",
-            GenericNotification(
-                NotificationType.GENERIC,
-                "${user.username} added to group ${group.name}"
+            messageSender.convertAndSend(
+                "/topic/system/notifications/${admin.username}",
+                GenericNotification(
+                    NotificationType.GENERIC,
+                    "${user.username} added to group ${group.name}"
+                )
             )
-        )
+        }
     }
 
     @MessageMapping("/group.removeUser")
     fun removeFromGroup(@Payload message: GroupOperationMessage,
                         principal: Principal) {
         val admin = getRequestUser(principal)
-        val group = getRequestGroup(message)
-        adminCheck(admin, group)
-        val user = chatUserRepository.findByUsername(message.name)!!
 
-        // Don't remove admin
-        if (user.id == admin.id) return
+        catchAndNotifyError(admin, "Could not remove user") {
+            val group = getRequestGroup(message)
+            adminCheck(admin, group)
+            val user = chatUserRepository.findByUsername(message.name)!!
 
-        val bindings = rabbitService.getQueueBindings(user.username)
-        if(bindings.contains(group.name)) {
-            // Remove binding from rabbit
-            rabbitService.unbindUserFromGroup(group.name, user.username)
+            // Don't remove admin
+            if (user.id == admin.id) throw Exception("Admin")
+
+            val bindings = rabbitService.getQueueBindings(user.username)
+            if(bindings.contains(group.name)) {
+                // Remove binding from rabbit
+                rabbitService.unbindUserFromGroup(group.name, user.username)
+            }
+
+            messageSender.convertAndSend(
+                "/topic/system/notifications/${user.username}",
+                GenericNotification(
+                    NotificationType.GENERIC,
+                    "Removed from group ${group.name}"
+                )
+            )
+            messageSender.convertAndSend(
+                "/topic/system/notifications/${admin.username}",
+                GenericNotification(
+                    NotificationType.GENERIC,
+                    "${user.username} removed from ${group.name}"
+                )
+            )
         }
-
-        messageSender.convertAndSend(
-            "/topic/system/notifications/${user.username}",
-            GenericNotification(
-                NotificationType.GENERIC,
-                "Removed from group ${group.name}"
-            )
-        )
-        messageSender.convertAndSend(
-            "/topic/system/notifications/${admin.username}",
-            GenericNotification(
-                NotificationType.GENERIC,
-                "${user.username} removed from ${group.name}"
-            )
-        )
     }
 
     @MessageMapping("/group.messages")
     fun getMessages(@Payload message: GroupOperationMessage,
                     principal: Principal) {
-
         val user = getRequestUser(principal)
-        val group = getRequestGroup(message)
-        val bindings = rabbitService.getQueueBindings(user.username)
 
-        if(!bindings.contains(group.name)) {
+        catchAndNotifyError(user, "Could not get messages") {
+            val group = getRequestGroup(message)
+            val bindings = rabbitService.getQueueBindings(user.username)
+
+            if(!bindings.contains(group.name)) {
+                messageSender.convertAndSend(
+                    "/topic/system/notifications/${user.username}",
+                    GenericNotification(
+                        NotificationType.ERROR,
+                        "Not member of group ${group.name}"
+                    )
+                )
+                return@catchAndNotifyError
+            }
+
+            val msgList = mutableListOf<ChatMessage>()
+            groupMessageRepository.findByGroup(group).forEach {
+                msgList.add(gson.fromJson(it.content, ChatMessage::class.java))
+            }
+
             messageSender.convertAndSend(
                 "/topic/system/notifications/${user.username}",
-                GenericNotification(
-                    NotificationType.ERROR,
-                    "Not member of group ${group.name}"
+                GroupMessageListNotification(
+                    NotificationType.MESSAGE_LIST,
+                    msgList
                 )
             )
-            return
         }
-
-        val msgList = mutableListOf<ChatMessage>()
-        groupMessageRepository.findByGroup(group).forEach {
-            msgList.add(gson.fromJson(it.content, ChatMessage::class.java))
-        }
-
-        messageSender.convertAndSend(
-            "/topic/system/notifications/${user.username}",
-            GroupMessageListNotification(
-                NotificationType.MESSAGE_LIST,
-                msgList
-            )
-        )
     }
 
     @MessageMapping("/group.list")

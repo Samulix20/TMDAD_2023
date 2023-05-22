@@ -1,5 +1,5 @@
 #!/bin/bash
-DEPLOYMENT="cloud"
+DEPLOYMENT="local"
 
 # Init data directories
 mkdir -p database/data
