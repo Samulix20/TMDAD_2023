@@ -258,9 +258,7 @@ function onError(error) {
     try {
         console.error('Error:', error.headers.message);
     } catch (e) {}
-    
-    connectingElement.textContent = 'No fue posible conectar con WebSocket';
-    connectingElement.style.color = 'red';
+    window.location.reload();
 }
 
 function onNotificationReceived(payload) {
