@@ -91,7 +91,7 @@ class ChatController (
             trendService.addMessage(chatMessage)
             // Publish message
             rabbitService.publish(chatMessage, exchange)
-        } catch (e : NullPointerException) {
+        } catch (e : Exception) {
             messageSender.convertAndSend(
                 "/topic/system/notifications/${principal.name}",
                 GenericNotification(
@@ -100,7 +100,6 @@ class ChatController (
                 )
             )
         }
-
     }
 }
 

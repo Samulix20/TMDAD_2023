@@ -29,9 +29,16 @@ data class RabbitMqConfig (
     }
 
     fun httpClient() : Client {
+        var proto = "http"
+        var mPort = managementPort
+        if(useSSL.toBooleanStrict()) {
+            proto = "https"
+            mPort = "443"
+        }
+        
         return Client(
             ClientParameters()
-                .url("http://$host:$managementPort/api/")
+                .url("$proto://$host:$mPort/api/")
                 .username(username)
                 .password(password)
         )
